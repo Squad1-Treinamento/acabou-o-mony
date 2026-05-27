@@ -1,0 +1,17 @@
+{
+  "skill_name": "create-tech-plan",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Create a tech plan based on spec-012 for expiring password reset tokens after 30 minutes. Ask clarifying questions first, then save it under spec/tech-plans/ with the next available id.",
+      "expected_output": "A new tech plan file saved under spec/tech-plans/ with architecture, stack, security, and task preview sections.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Based on user story us-005 for onboarding a new team member, create a tech plan. Ask clarifying questions before writing. Save the plan under spec/tech-plans/ with the next id.",
+      "expected_output": "A new tech plan file saved under spec/tech-plans/ aligned with the template and optional sections only if relevant.",
+      "files": []
+    }
+  ]
+}

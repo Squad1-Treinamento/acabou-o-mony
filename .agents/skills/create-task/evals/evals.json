@@ -1,0 +1,17 @@
+{
+  "skill_name": "create-task",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Create a single task from spec-012 to validate JWT expiration in auth middleware. Ask clarifying questions first, then save it under spec/tasks/ with the next available id.",
+      "expected_output": "A new task file saved under spec/tasks/ with atomic scope, local context, acceptance criteria, and test requirements.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Using tech plan plan-003, generate 4 atomic tasks and save them under spec/tasks/. Ask clarifying questions before writing. Update the tasks index.",
+      "expected_output": "Four new task files saved under spec/tasks/ with unique ids and index entries.",
+      "files": []
+    }
+  ]
+}

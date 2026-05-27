@@ -1,0 +1,17 @@
+{
+  "skill_name": "create-commit",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "I need to commit my changes. Please stage what is needed and propose a commit message.",
+      "expected_output": "Asks for permission to run git commands and whether to stage all files, then proposes a commit message format.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "There are changes in src/api and docs. Split into multiple commits and help me stage them.",
+      "expected_output": "Proposes multiple commits grouped by area, asks for staging permission, and offers interactive file selection.",
+      "files": []
+    }
+  ]
+}

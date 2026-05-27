@@ -1,0 +1,17 @@
+{
+  "skill_name": "create-adr",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "We decided to standardize all backend services on Node.js v20 and remove Python for new services. Ask clarifying questions first, then create an ADR in spec/adrs/ with the next available id.",
+      "expected_output": "A new ADR file saved under spec/adrs/ in pt-BR with Contexto, Decisao, Consequencias and status handling.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "We are introducing a new billing microservice and changing the API gateway routing. Ask if an ADR should be created, then proceed only if confirmed.",
+      "expected_output": "A clarification prompt asking whether to proceed with ADR documentation.",
+      "files": []
+    }
+  ]
+}

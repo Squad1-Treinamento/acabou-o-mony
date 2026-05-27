@@ -1,5 +1,5 @@
 ---
-id: adr-0000
+id: adr-000
 status: active
 links:
   - spec/adrs/index.md

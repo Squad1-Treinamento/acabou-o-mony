@@ -1,0 +1,17 @@
+{
+  "skill_name": "create-spec",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Create a spec for expiring password reset tokens after 30 minutes. Ask clarifying questions first, then save it under spec/specs/ with the next available id.",
+      "expected_output": "A new spec file saved under spec/specs/ with BDD acceptance criteria, business rules, and examples.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "From the user story for onboarding a new team member, create a spec. Ask clarifying questions before writing. Save the spec under spec/specs/ with the next id.",
+      "expected_output": "A new spec file saved under spec/specs/ aligned with the template and optional interface/data contracts only if needed.",
+      "files": []
+    }
+  ]
+}

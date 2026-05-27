@@ -1,0 +1,17 @@
+{
+  "skill_name": "create-user-story",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Create a user story for resetting a forgotten password. Use the project template, ask me any clarifying questions first, then save it under spec/user-stories/ with the next available id.",
+      "expected_output": "A new user story file saved under spec/user-stories/ with BDD acceptance criteria and a Definition of Done.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Based on spec/specs/index.md and any related files, create a user story for onboarding a new team member. Ask clarifying questions before writing, then save it to spec/user-stories/ with the next id.",
+      "expected_output": "A new user story file saved under spec/user-stories/ aligned with the template and BDD/DoD sections.",
+      "files": []
+    }
+  ]
+}
