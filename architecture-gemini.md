@@ -1,43 +1,37 @@
-# Payment Gateway System: Architecture Design & Implementation Blueprint
+# Acabou o Mony: Payment Gateway Architecture Design & Implementation Blueprint
 
-This blueprint outlines the technical architecture, security protocols, scaling strategies, and an implementation checklist for a high-performance, secure, and scalable Payment Gateway System built with **Modern Java (Java 21 / Spring Boot 3.x)**, **Docker**, and load-tested with **Locust**.
+This blueprint outlines the technical architecture, security protocols, scaling strategies, and implementation checklist for the "Acabou o Mony" Payment Gateway. The system is built with **Modern Java (Java 21 / Spring Boot 3.x)**, **Docker**, and integrates directly with the **Mercado Pago API** as the acquiring layer to support Live and Conversational Commerce.
 
 ---
 
 ## 1. High-Level Architectural Design
 
-The payment gateway processes critical financial operations. To satisfy the `<1s` latency SLA and support horizontal auto-scaling, a **reactive, non-blocking, event-driven architecture** is selected.
+The payment gateway processes critical financial operations. To satisfy the `<1s` latency SLA and support horizontal auto-scaling, a streamlined **reactive, non-blocking architecture** is implemented. The API Gateway layer has been removed to reduce network hops, placing edge responsibilities squarely on the Reverse Proxy.
 
-```
+```text
                   ┌──────────────────────────────────────────────┐
-                  │          API Consumers / Clients             │
+                  │   API Consumers (Live/Conversational Comm.)  │
                   └──────────────────────┬───────────────────────┘
                                          │ HTTPS / TLS 1.3
                                          ▼
                   ┌──────────────────────────────────────────────┐
-                  │      Reverse Proxy / Load Balancer           │
-                  │           (Nginx / Traefik)                  │
-                  └──────────────────────┬───────────────────────┘
-                                         │
-                                         ▼
-            ┌──────────────────────────────────────────────────────────┐
-            │          Spring Cloud Gateway / Edge Service             │
-            │  (Rate Limiting, Routing, TLS Termination, RBA Engine)   │
-            └──────────┬────────────────────────────────────┬──────────┘
-                       │ (gRPC / HTTP/2)                    │
-                       ▼                                    ▼
-┌──────────────────────────────────────────────┐  ┌──────────────────────────────┐
-│       Core Payment Processing Service        │  │     3DS / MFA Auth Engine    │
-│    (Spring Boot 3.x, Spring WebFlux, Netty)  │  │ (3D Secure 2.x authentication)│
-└────────┬─────────────────────────────┬───────┘  └──────────────────────────────┘
-         │                             │
-         │ R2DBC (Non-blocking)        │ Redis Protocol (Lettuce)
-         ▼                             ▼
-┌──────────────────┐          ┌──────────────────┐
-│ PostgreSQL DB    │          │ Redis Cluster    │
-│ (ACID Ledger,    │          │ (Idempotency,    │
-│  Transactions)   │          │  Cache, Rate-lim)│
-└──────────────────┘          └──────────────────┘
+                  │      Reverse Proxy & Load Balancer           │
+                  │   (Nginx: TLS Termination & Rate Limiting)   │
+                  └──────────┬─────────────────────────────┬─────┘
+                             │ (gRPC / HTTP/2)             │ (HTTP/2)
+                             ▼                             ▼
+     ┌──────────────────────────────────────────────┐  ┌───────────────────────────────┐
+     │       Core Payment Processing Service        │  │     3DS / MFA Auth Engine     │
+     │    (Spring Boot 3.x, Spring WebFlux, Netty)  │  │ (3D Secure 2.x authentication)│
+     └────┬───────────────────────┬──────────────┬──┘  └───────────────────────────────┘
+          │                       │              └───────┐
+          │ R2DBC (Non-blocking)  │ Redis Protocol       │ HTTPS / REST
+          ▼                       ▼                      ▼
+     ┌──────────────────┐   ┌────────────────────┐   ┌────────────────────────┐
+     │ PostgreSQL 16    │   │ Redis Cluster      │   │   Mercado Pago API     │
+     │ (ACID Ledger,    │   │ (Idempotency &     │   │ (External Acquirer &   │
+     │  Transactions)   │   │  App Rate Limiting)│   │  Payment Processor)    │
+     └──────────────────┘   └────────────────────┘   └────────────────────────┘
 ```
 
 ---
@@ -46,22 +40,24 @@ The payment gateway processes critical financial operations. To satisfy the `<1s
 
 ### Architecture Decisions
 * **Runtime Platform:** Java 21 with Virtual Threads (Project Loom) or Spring WebFlux with Netty. We will leverage **Spring Boot 3.x with Java 21 Virtual Threads** on an embedded Tomcat container. This provides the blocking programming model's simplicity (compatible with Spring Data JPA and standard transaction management) while achieving near-reactive performance and throughput without thread-pool starvation.
+* **Reverse Proxy / Load Balancer:** Kept structurally simple but robust by supporting both **Nginx**. These handle the essential implementations of external load balancing, TLS 1.3 termination, and edge-level rate limiting before traffic hits the core application.
 * **Database Engine:** **PostgreSQL 16** with a highly-optimized connection pool (HikariCP).
 * **Caching & Idempotency Layer:** **Redis** for sub-millisecond lookups of idempotent request keys and token validations.
+* **External Acquiring:** **Mercado Pago API** replaces any mock processors to handle real-world transaction clearing and acquiring.
 * **Asynchronous Execution:** Heavy, non-blocking post-processing (e.g., webhook notifications, analytics ingestion, audit logging) is offloaded to an asynchronous execution pool using Java's `ExecutorService` backed by virtual threads.
 
 ### SLA Compliance Mechanics
 1. **Fast-path Validation (<50ms):**
-   * Pre-validation of schema, constraints, and cryptographic signatures at the Gateway level.
+   * Pre-validation of schema, constraints, and cryptographic signatures at the Core Service level.
    * Idempotency checks against Redis: If a duplicate `Idempotency-Key` is found within a 24-hour window, the cached response is instantly returned.
 2. **Risk-Based Authentication (RBA) (<100ms):**
-   * Rapid evaluation of transaction metadata against basic fraud parameters stored in Redis.
+   * Rapid evaluation of transaction metadata against basic fraud parameters stored in Redis (handled directly within the Core Processing Service).
    * If flagged as low-risk, bypasses the step-up 3DS flow to preserve the `<1s` latency.
 3. **Database Ledger Write (<300ms):**
    * Optimized execution of the core ledger update inside a read-committed database transaction block.
    * Use of composite indexes on frequently searched fields (`transaction_id`, `merchant_id`).
-4. **Acquirer Communication (<400ms):**
-   * Outbound communication to the Mock Payment Processor/Acquirer via high-performance HTTP/2-enabled `WebClient` with aggressive timeouts (e.g., 500ms connection/read timeouts).
+4. **Mercado Pago Communication (<400ms):**
+   * Outbound communication to the Mercado Pago API via high-performance HTTP/2-enabled `WebClient` with aggressive timeouts (e.g., 500ms connection/read timeouts).
 
 ---
 
@@ -73,7 +69,7 @@ The gateway is packaged as lightweight Docker containers designed for rapid star
 * **Container Orchestration Platform:** Kubernetes (Staging/Prod blueprint) / Docker Compose with replica scaling (Dev/Staging environment).
 * **Target Scaling Metric:** **CPU Utilization >= 70%** or **Memory Utilization >= 75%** sustained over a 2-minute window.
 * **Auto-Scaling Componentry:**
-  * **Upstream Load Balancer (Nginx):** Dynamically detects new container replicas via DNS round-robin or service discovery (Consul / Eureka).
+  * **Upstream Load Balancer (Nginx):** Dynamically detects new container replicas via DNS round-robin or service discovery.
   * **Staging Auto-scaler Simulation:** A bash script monitoring Docker statistics that spins up/down additional containers (`docker compose scale payment-service=N`) based on active Locust load measurements.
 * **Zero-Degradation Deployment:** Graceful shutdown configuration (`server.shutdown=graceful` in Spring Boot) ensures active transactions have up to 30 seconds to complete before a container is terminated during scale-down operations.
 
@@ -91,7 +87,7 @@ The gateway is packaged as lightweight Docker containers designed for rapid star
 ## 4. Enterprise-Grade Security & PCI-DSS Compliance
 
 ### Cryptography & Transport Security
-* **Network Isolation:** All external endpoints strictly enforce **HTTPS with TLS 1.3** and strong cipher suites (e.g., `TLS_AES_256_GCM_SHA384`).
+* **Network Isolation:** All external endpoints strictly enforce **HTTPS with TLS 1.3** handled at the Nginx layer, using strong cipher suites (e.g., `TLS_AES_256_GCM_SHA384`).
 * **Sensitive Data at Rest (PCI-DSS Section 3.4):**
   * Primary Account Numbers (PANs/Credit Card numbers) are **never** stored in plain text.
   * A separate, highly isolated **Tokenization Service** intercepts the PAN, generates a unique, non-reversible surrogate token, and encrypts the actual PAN using **AES-256-GCM** with a master key stored in an external Key Management System (KMS / HashiCorp Vault mockup).
@@ -118,15 +114,15 @@ This checklist serves as our development framework for the upcoming sessions.
 - [ ] Initialize Spring Boot 3.x project with Java 21, Spring Web, Spring Security, Spring Data JPA, and PostgreSQL Driver.
 - [ ] Implement database schema with full auditing, indexing, and strict constraints for `transactions`, `merchants`, and `audit_logs`.
 - [ ] Develop the core Payment Processing REST Controller for `/api/v1/payments` (Credit/Debit) with robust model validation.
-- [ ] Write a high-performance Mock Payment Processor / Acquirer Integration using a reactive HTTP `WebClient` with aggressive timeouts.
+- [ ] Write the high-performance **Mercado Pago API Integration** using a reactive HTTP `WebClient` with aggressive timeouts for acquiring.
 - [ ] Implement a sub-millisecond idempotency check interceptor using Redis cache.
 - [ ] Configure Async execution pools utilizing Java 21 Virtual Threads to offload background reporting, webhook emission, and audit logging.
 
 ### Phase 2: Security & PCI-DSS Hardening
 - [ ] Implement Tokenization Engine to safely encrypt (AES-256-GCM) and store credit card numbers.
-- [ ] Enforce Spring Security rules, restricting endpoints to authorized merchant accounts using API Key / JWT tokens.
-- [ ] Develop the Risk-Based Authentication Engine and 3D Secure Mock Authentication Redirect flow (`/api/v1/payments/3ds-challenge`).
-- [ ] Set up secure local TLS 1.3 configuration for Tomcat/HTTPS using self-signed certificates.
+- [ ] Enforce Spring Security rules directly in the Core Service, restricting endpoints to authorized merchant accounts using API Key / JWT tokens.
+- [ ] Develop the Risk-Based Authentication Engine and 3D Secure Authentication Redirect flow (`/api/v1/payments/3ds-challenge`).
+- [ ] Configure Nginx reverse proxy for secure TLS 1.3 termination and baseline rate-limiting.
 
 ### Phase 3: Dockerization, Observability & Scaling
 - [ ] Package Spring Boot application into a multi-stage Dockerfile optimized for small image sizes and fast execution.
@@ -140,8 +136,4 @@ This checklist serves as our development framework for the upcoming sessions.
   - Latency SLA compliance (<1s).
   - Memory leak absence under Virtual Thread models.
   - Successful scale-up triggers at >70% CPU.
-- [ ] Generate a final verification report summarizing test metrics and confirming system stability.
-
----
-
-*This architecture document is finalized. I am ready to begin implementing the system on your command.*
+- [ ] Generate a final verification report summarizing test metrics and confirming system stability under Live Commerce load conditions.
