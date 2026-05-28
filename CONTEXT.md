@@ -24,66 +24,9 @@ To support a massive volume of transactions and deliver on the promise made to u
 
 ---
 
-## 3. Behavior-Driven Development (BDD) User Stories
+## 3. BDD Outcome Overview
 
-These user stories form the foundational backlog for the engineering team, mapping directly to our architectural goals.
+The combined outcome is a fast, resilient, and trustworthy payment experience that removes friction during high-volume commerce and enables merchants to convert more sales without interruptions.
 
-### Story 1: Transaction Processing
-**As a** user of the "Acabou o Mony" card,
-**I want** to be able to execute transactions (credit, debit) rapidly,
-**So that** I can conclude my online purchases efficiently.
-
-**Acceptance Criteria:**
-* **Given** that I initiate a transaction, **Then** the transaction must be fully processed in under 1 second (<1s).
-* **Given** that I execute a transaction, **Then** I must receive an immediate transaction confirmation (success/failure).
-
-**Definition of Done (DoD):**
-* Transactions are processed and confirmed strictly within the defined criteria.
-* Performance testing under heavy load is successfully executed and approved.
-* Security tests have passed.
-* System documentation is updated.
-
-### Story 2: Scalability
-**As an** engineer at "Acabou o Mony",
-**I want** the system to scale automatically,
-**So that** it can support sudden spikes in transaction volume without any performance degradation.
-
-**Acceptance Criteria:**
-* **Given** that the system is experiencing [X]% of its maximum load capacity, **Then** it must automatically scale up to accommodate additional users.
-* **Given** that the system is scaling, **Then** there must be zero perceptible degradation in the end-user's experience.
-
-**Definition of Done (DoD):**
-* The system automatically scales up and scales down based on resource thresholds.
-* Scalability and stress tests are successfully passed.
-* Telemetry, monitoring, and alerting systems are fully implemented.
-* Infrastructure documentation is updated.
-
-### Story 3: Transaction Security
-**As a** user of the "Acabou o Mony" card,
-**I want** my transactions to be rigorously secured,
-**So that** I can shop with absolute confidence.
-
-**Acceptance Criteria:**
-* **Given** that I execute a transaction, **Then** it must strictly route through a secure, encrypted channel (HTTPS).
-* **Given** that a transaction occurs, **Then** there must be a two-step verification/authentication mechanism in place (e.g., 3DS / RBA).
-
-**Definition of Done (DoD):**
-* HTTPS (TLS 1.3) and two-step verification are fully implemented in production.
-* Security audits and regulatory compliance checks have passed.
-* Security awareness training for the internal team is completed.
-* Security protocol documentation is updated.
-
-### Story 4: Integration with Live and Conversational Commerce
-**As a** merchant using the "Acabou o Mony" platform,
-**I want** the system to seamlessly integrate with Live and Conversational Commerce platforms,
-**So that** my customers can execute transactions without ever leaving the host platform.
-
-**Acceptance Criteria:**
-* **Given** that a customer is actively watching a Live Commerce stream, **Then** they must be able to complete a transaction without being redirected away from the platform.
-* **Given** that a customer is utilizing a Conversational Commerce interface, **Then** the system must natively support transactions directly through chats/bots.
-
-**Definition of Done (DoD):**
-* The API integration is fully built, documented, and tested.
-* Application stress and performance testing under integrated loads are approved.
-* Public-facing API documentation is available for integration partners.
-* Strategic partnerships with Live and Conversational Commerce platforms are established.
+- **Given** the platform serves merchants and card users during live and conversational commerce, **When** transactions are initiated at scale, **Then** payments are processed in under one second with immediate confirmation, the system scales automatically without end-user performance degradation, and each transaction uses secure connections and secure authentication.
+- **Given** customers stay inside live streams or chat interfaces, **When** they complete a purchase, **Then** the payment flow finishes without redirecting them away from the host platform.
