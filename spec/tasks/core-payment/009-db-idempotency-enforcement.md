@@ -1,3 +1,8 @@
+---
+id: task-009
+status: in-progress
+---
+
 # 009 - DB Idempotency Enforcement
 
 ## Description

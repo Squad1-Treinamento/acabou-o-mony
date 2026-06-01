@@ -1,3 +1,8 @@
+---
+id: task-016
+status: in-progress
+---
+
 # 016 - Outbox Pattern (Persistence)
 
 ## Description

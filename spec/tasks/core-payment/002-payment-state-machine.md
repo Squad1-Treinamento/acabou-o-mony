@@ -1,6 +1,6 @@
 ---
 id: task-002
-status: planned
+status: complete
 links:
   - spec/tech-plans/plan-001-core-payment-processing.md (Phase 1, Payment Lifecycle State Machine)
   - spec/specs/spec-001-core-payment-processing.md (Payment Lifecycle Rules, Allowed State Transitions)

@@ -1,6 +1,6 @@
 ---
 id: task-001
-status: planned
+status: complete
 links:
   - spec/tech-plans/plan-001-core-payment-processing.md (Phase 1)
   - spec/specs/spec-001-core-payment-processing.md (Persistence Rules)

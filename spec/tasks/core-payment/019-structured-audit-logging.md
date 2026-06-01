@@ -1,3 +1,8 @@
+---
+id: task-019
+status: in-progress
+---
+
 # 020 - Structured Audit Logging
 
 ## Description

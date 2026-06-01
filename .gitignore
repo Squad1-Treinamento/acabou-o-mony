@@ -1,0 +1,17 @@
+# Java build
+/target
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Eclipse
+*.classpath
+*.project
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Sensitive config
+*.env
