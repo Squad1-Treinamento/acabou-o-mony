@@ -40,6 +40,7 @@ The payment gateway processes critical financial operations. To satisfy the `<1s
 
 ### Architecture Decisions
 * **Runtime Platform:** Java 21 with Virtual Threads (Project Loom) or Spring WebFlux with Netty. We will leverage **Spring Boot 3.x with Java 21 Virtual Threads** on an embedded Tomcat container. This provides the blocking programming model's simplicity (compatible with Spring Data JPA and standard transaction management) while achieving near-reactive performance and throughput without thread-pool starvation.
+* **Microservices Communication:** The 3DS/MFA Auth Engine is completely decoupled from the relational database. It relies entirely on the Redis Cluster for ultra-fast session state management and communicates authentication results back to the Core Service via internal network calls (e.g., HTTP/2 WebClient).
 * **Reverse Proxy / Load Balancer:** Kept structurally simple but robust by supporting both **Nginx**. These handle the essential implementations of external load balancing, TLS 1.3 termination, and edge-level rate limiting before traffic hits the core application.
 * **Database Engine:** **PostgreSQL 16** with a highly-optimized connection pool (HikariCP).
 * **Caching & Idempotency Layer:** **Redis** for sub-millisecond lookups of idempotent request keys and token validations.
@@ -97,8 +98,8 @@ The gateway is packaged as lightweight Docker containers designed for rapid star
 * **Standard Secure Flow:** Pre-authorized, authenticated API requests from pre-vetted merchants complete instantly.
 * **Step-Up Authentication (3D Secure 2.x):**
   * Enforced for high-risk flags, high-value transactions, or first-time card usages.
-  * When triggered, the backend returns a `3DS_CHALLENGE_REQUIRED` status with a redirect URL and a JWT token.
-  * The Core Processing SLA for safe API calls remains intact (<1s) because standard calls bypass this flow entirely, while the 3DS process is fundamentally asynchronous to the consumer's checkout journey.
+  * When triggered, the backend returns a `3DS_CHALLENGE_REQUIRED` status with a redirect URL and a JWT token, persisting the challenge state strictly in Redis.
+  * The Core Processing SLA for safe API calls remains intact (<1s) because standard calls bypass this flow entirely. The separated 3DS Engine validates the MFA token via Redis and asynchronously notifies the Core Service to finalize the ledger update.
 
 ### Vulnerability Prevention & Auditing
 * **Input Sanitization & Injection Prevention:** SQL Injection is prevented by utilizing parameterized queries / JPA repositories. Cross-Site Scripting (XSS) is mitigated by strict content-type headers and input encoders.
@@ -121,7 +122,7 @@ This checklist serves as our development framework for the upcoming sessions.
 ### Phase 2: Security & PCI-DSS Hardening
 - [ ] Implement Tokenization Engine to safely encrypt (AES-256-GCM) and store credit card numbers.
 - [ ] Enforce Spring Security rules directly in the Core Service, restricting endpoints to authorized merchant accounts using API Key / JWT tokens.
-- [ ] Develop the Risk-Based Authentication Engine and 3D Secure Authentication Redirect flow (`/api/v1/payments/3ds-challenge`).
+- [ ] Develop the Risk-Based Authentication Engine and 3DS flow (`/api/v1/payments/3ds-challenge`), utilizing Redis for session state and internal WebClient calls to update the Core Service.
 - [ ] Configure Nginx reverse proxy for secure TLS 1.3 termination and baseline rate-limiting.
 
 ### Phase 3: Dockerization, Observability & Scaling
