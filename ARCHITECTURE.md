@@ -21,7 +21,7 @@ The payment gateway processes critical financial operations. To satisfy the `<1s
                              │ gRPC/ HTTP/2                                                              │
                              ▼                                                                           ▼
 ┌────────────────────────┐  ┌──────────────────────────────────────────────┐ Internal HTTP/2 ┌─────────────────────────────────┐
-│   Mercado Pago API     │◄─┤       Core Payment Processing Service        ├────────────────►│      3DS / MFA Auth Engine      │
+│   Mercado Pago API     │◄─┤       Core Payment Processing Service        │◄────────────────┤      3DS / MFA Auth Engine      │
 │ (External Acquirer)    │  │    (Spring Boot 3.x, Spring WebFlux, Netty)  │                 │  (3D Secure 2.x authentication) │
 └────────────────────────┘  └────┬───────────────────────┬─────────────────┘                 └──┬──────────────────────────────┘
                                  │                       │                                      │
