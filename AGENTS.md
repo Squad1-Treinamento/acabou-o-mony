@@ -12,6 +12,7 @@ Agent Roles (prompt must declare the role)
 - Spec Architect: writes/updates specs and acceptance criteria. No code or tests.
 - Software Engineer: implements from specs, creates tasks if needed, writes tests.
 - Review Agent: checks code vs specs, flags out-of-spec work, reports gaps.
+- create-commit: handles the creation and pushing of git commits for completed tasks following repository guidelines.
 
 Doc Index (start here)
 - `spec/index.md`

@@ -1,0 +1,23 @@
+server:
+  port: 8081
+
+spring:
+  redis:
+    cluster:
+      nodes: localhost:6379
+    password: # sensitive — set via env SPRING_REDIS_PASSWORD
+    timeout: 2000ms
+
+jwt:
+  secret: # sensitive — set via env JWT_SECRET (HS256 key, min 256 bits)
+  expiration-seconds: 600
+
+3ds:
+  session-ttl-seconds: 600
+  auth-result-ttl-seconds: 86400
+  callback-url: http://localhost:8080/api/v1/payments/3ds-callback
+  rate-limit-per-second: 100
+
+risk:
+  score-threshold: 70
+  high-value-threshold: 5000.00
