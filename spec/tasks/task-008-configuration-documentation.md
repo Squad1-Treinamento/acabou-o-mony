@@ -1,5 +1,5 @@
 ---
-id: task-010
+id: task-008
 status: planned
 links:
   - spec/tasks/index.md
@@ -24,7 +24,7 @@ links:
    - **Callback:** `3ds.callback-url` (no default — environment specific)
    - **Rate limit:** `3ds.rate-limit-per-second` (default: 100)
    - **Risk thresholds:** `risk.score-threshold` (default: 70), `risk.high-value-threshold` (default: 5000.00)
-2. Ensure every property used across tasks 002-008 is present in `application.yml`.
+2. Ensure every property used across tasks 002-005 is present in `application.yml`.
 3. Add YAML comments documenting each property: purpose, expected format, examples.
 4. Optionally create `CONFIG.md` with a reference table of all properties, their types, defaults, and descriptions.
 

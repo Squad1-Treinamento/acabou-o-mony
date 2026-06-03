@@ -1,5 +1,5 @@
 ---
-id: task-011
+id: task-009
 status: planned
 links:
   - spec/tasks/index.md
@@ -15,7 +15,7 @@ links:
   - `3ds-engine/src/main/java/com/acabouomony/engine/service/ChallengeSessionService.java` (task-004) — log challenge creation
   - `3ds-engine/src/main/java/com/acabouomony/engine/service/AuthVerificationService.java` (task-005) — log approval/decline
   - `3ds-engine/src/main/java/com/acabouomony/engine/service/CallbackNotifier.java` (task-006) — already partially done, align format
-  - `3ds-engine/src/main/java/com/acabouomony/engine/service/ChallengeSessionService.java` (task-008) — log expiry events
+  - `3ds-engine/src/main/java/com/acabouomony/engine/service/ChallengeSessionService.java` (task-005) — log expiry events
 - **No new files needed** — logging is added inline to existing services
 - **Dependencies:** `LoggerFactory` (SLF4J), `Jackson` (or `ObjectMapper`) for JSON formatting
 

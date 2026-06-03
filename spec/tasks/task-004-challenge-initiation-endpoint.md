@@ -20,7 +20,7 @@ links:
 ## Scope
 
 1. Create `ChallengeSessionService` as `@Component`:
-   - `resolveChallenge(challengeId)` — calls `ChallengeSessionRepository.findSessionById()`, checks expiry via `isSessionExpired()` (delegates to task-008 logic later), returns `Mono<ChallengeSession>`.
+   - `resolveChallenge(challengeId)` — calls `ChallengeSessionRepository.findSessionById()`, checks expiry via `isSessionExpired()` (delegates to task-005 logic later), returns `Mono<ChallengeSession>`.
 2. Create `GET /challenge/{challenge_id}` endpoint in `LandingPageController`:
    - Accepts `challenge_id` as path variable and `jwt` as required query parameter.
    - Calls `JwtTokenProvider.verify(jwt)` to validate the JWT — if invalid, returns HTTP 400 with `ErrorResponse` (error code `INVALID_TOKEN`).
