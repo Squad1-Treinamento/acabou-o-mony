@@ -1,0 +1,34 @@
+server {
+  listen 80;
+
+  access_log /var/log/nginx/access.log;
+  error_log /var/log/nginx/error.log;
+
+  client_max_body_size 2m;
+
+  limit_req_zone $binary_remote_addr zone=req_limit:10m rate=10r/s;
+
+  location = /healthz {
+    add_header Content-Type text/plain;
+    return 200 'ok';
+  }
+
+  location / {
+    limit_req zone=req_limit burst=20 nodelay;
+
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host $host;
+
+    proxy_connect_timeout 5s;
+    proxy_read_timeout 60s;
+    proxy_send_timeout 60s;
+
+    proxy_pass http://backend_api;
+  }
+}
+
+upstream backend_api {
+  ${UPSTREAM_SERVERS}
+}
