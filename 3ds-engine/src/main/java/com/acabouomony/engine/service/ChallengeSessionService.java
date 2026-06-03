@@ -29,7 +29,10 @@ public class ChallengeSessionService {
                 });
     }
 
-    private boolean isSessionExpired(ChallengeSession session) {
+    public boolean isSessionExpired(ChallengeSession session) {
+        if ("expired".equals(session.getStatus())) {
+            return true;
+        }
         var expiresAt = session.getCreatedAt().plusSeconds(session.getTtl());
         return Instant.now().isAfter(expiresAt);
     }
