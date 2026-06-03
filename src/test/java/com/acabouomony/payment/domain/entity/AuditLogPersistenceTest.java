@@ -1,5 +1,7 @@
 package com.acabouomony.payment.domain.entity;
 
+import com.acabouomony.payment.domain.entity.AuditLog;
+import com.acabouomony.payment.domain.entity.Transaction;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
