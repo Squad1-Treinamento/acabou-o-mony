@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import static com.acabouomony.engine.service.AuditLogger.auditLog;
+
 import com.acabouomony.engine.dto.CallbackRequest;
 
 import reactor.core.publisher.Mono;
@@ -31,12 +33,13 @@ public class CallbackNotifier {
     private static RetryBackoffSpec callbackRetry(String challengeId) {
         return Retry.backoff(3, Duration.ofSeconds(1))
                 .maxBackoff(Duration.ofSeconds(5))
-                .doBeforeRetry(rs -> log.warn("Retrying callback for challenge {} (attempt {})",
+                .doBeforeRetry(rs -> log.warn(
+                        "{\"event\":\"callback.retry\",\"challenge_id\":\"{}\",\"attempt\":{}}",
                         challengeId, rs.totalRetries() + 1));
     }
 
-    public Mono<Void> notifyCore(String challengeId, String transactionId, String authStatus) {
-        var request = new CallbackRequest(challengeId, transactionId, authStatus, Instant.now());
+    public Mono<Void> notifyCore(String challengeId, String transactionId, String merchantId, String authStatus) {
+        var request = new CallbackRequest(challengeId, transactionId, merchantId, authStatus, Instant.now());
 
         return webClient.post()
                 .uri("/api/v1/payments/3ds-callback")
@@ -44,17 +47,13 @@ public class CallbackNotifier {
                 .retrieve()
                 .onStatus(HttpStatus::isError, response ->
                         response.bodyToMono(String.class)
-                                .flatMap(body -> {
-                                    log.warn("Callback returned error for challenge {}: {} {}",
-                                            challengeId, response.statusCode(), body);
-                                    return Mono.error(new RuntimeException(
-                                            "Callback failed with " + response.statusCode()));
-                                }))
+                                .flatMap(body -> Mono.error(new RuntimeException(
+                                        "Callback failed with " + response.statusCode()))))
                 .bodyToMono(Void.class)
                 .retryWhen(callbackRetry(challengeId))
-                .doOnSuccess(v -> log.info("callback.sent challenge_id={} transaction_id={} auth_status={}",
-                        challengeId, transactionId, authStatus))
-                .doOnError(e -> log.warn("callback.failed challenge_id={} transaction_id={} auth_status={} error={}",
-                        challengeId, transactionId, authStatus, e.toString()));
+                .doOnSuccess(v -> log.info(
+                        auditLog("callback.sent", challengeId, transactionId, merchantId)))
+                .doOnError(e -> log.warn(
+                        auditLog("callback.failed", challengeId, transactionId, merchantId)));
     }
 }

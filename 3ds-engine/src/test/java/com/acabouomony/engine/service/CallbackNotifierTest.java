@@ -13,7 +13,7 @@ class CallbackNotifierTest {
     void notifyCoreShouldReturnNonNullMono() {
         var notifier = new CallbackNotifier("http://localhost:18080", webClientBuilder);
 
-        var result = notifier.notifyCore("ch-001", "txn-001", "approved");
+        var result = notifier.notifyCore("ch-001", "txn-001", "merchant-1", "approved");
 
         assertNotNull(result, "notifyCore should return a Mono");
     }

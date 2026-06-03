@@ -12,6 +12,8 @@ import com.acabouomony.engine.exception.ChallengeExpiredException;
 import com.acabouomony.engine.model.AuthResult;
 import com.acabouomony.engine.repository.ChallengeSessionRepository;
 
+import static com.acabouomony.engine.service.AuditLogger.auditLog;
+
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -41,6 +43,10 @@ public class AuthVerificationService {
                                         new ChallengeExpiredException(request.challengeId())))
                                 .flatMap(session -> {
                                     if (sessionService.isSessionExpired(session)) {
+                                        log.warn(auditLog("challenge.expired",
+                                                request.challengeId(),
+                                                session.getTransactionId(),
+                                                session.getMerchantId()));
                                         return repository
                                                 .updateSessionStatus(request.challengeId(), "expired")
                                                 .then(Mono.error(
@@ -55,40 +61,40 @@ public class AuthVerificationService {
                                                 com.acabouomony.engine.model.ChallengeSession session) {
         var token = request.mfaToken();
         if (token == null || token.isBlank()) {
-            log.warn("MFA verification failed for challenge {}: empty token",
-                    request.challengeId());
-            return decline(request.challengeId(), session.getTransactionId());
+            log.warn(auditLog("challenge.declined",
+                    request.challengeId(), session.getTransactionId(), session.getMerchantId()));
+            return decline(request.challengeId(), session.getTransactionId(), session.getMerchantId());
         }
-        log.info("MFA verification succeeded for challenge {}",
-                request.challengeId());
-        return approve(request.challengeId(), session.getTransactionId());
+        log.info(auditLog("challenge.approved",
+                request.challengeId(), session.getTransactionId(), session.getMerchantId()));
+        return approve(request.challengeId(), session.getTransactionId(), session.getMerchantId());
     }
 
-    private Mono<MfaVerifyResponse> approve(String challengeId, String transactionId) {
+    private Mono<MfaVerifyResponse> approve(String challengeId, String transactionId, String merchantId) {
         var result = new AuthResult("approved", challengeId, transactionId, Instant.now());
         return repository.updateSessionStatus(challengeId, "approved")
                 .then(repository.saveAuthResult(challengeId, result))
                 .doOnSuccess(ignored -> callbackNotifier
-                        .notifyCore(challengeId, transactionId, "approved")
+                        .notifyCore(challengeId, transactionId, merchantId, "approved")
                         .subscribeOn(Schedulers.boundedElastic())
                         .subscribe())
                 .then(Mono.just(new MfaVerifyResponse("approved", challengeId, transactionId)));
     }
 
-    private Mono<MfaVerifyResponse> decline(String challengeId, String transactionId) {
+    private Mono<MfaVerifyResponse> decline(String challengeId, String transactionId, String merchantId) {
         var result = new AuthResult("declined", challengeId, transactionId, Instant.now());
         return repository.updateSessionStatus(challengeId, "declined")
                 .then(repository.saveAuthResult(challengeId, result))
                 .doOnSuccess(ignored -> callbackNotifier
-                        .notifyCore(challengeId, transactionId, "declined")
+                        .notifyCore(challengeId, transactionId, merchantId, "declined")
                         .subscribeOn(Schedulers.boundedElastic())
                         .subscribe())
                 .then(Mono.just(new MfaVerifyResponse("declined", challengeId, transactionId)));
     }
 
     private MfaVerifyResponse toCachedResponse(AuthResult cached) {
-        log.warn("Idempotency hit for challenge {} - returning cached result {}",
-                cached.getChallengeId(), cached.getAuthStatus());
+        log.warn(auditLog("challenge.cached",
+                cached.getChallengeId(), cached.getTransactionId(), null));
         return new MfaVerifyResponse(
                 cached.getAuthStatus(),
                 cached.getChallengeId(),

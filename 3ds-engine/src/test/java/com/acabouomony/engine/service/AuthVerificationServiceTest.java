@@ -54,7 +54,7 @@ class AuthVerificationServiceTest {
         when(sessionService.isSessionExpired(session)).thenReturn(false);
         when(repository.updateSessionStatus("ch-001", "approved")).thenReturn(Mono.empty());
         when(repository.saveAuthResult(eq("ch-001"), any(AuthResult.class))).thenReturn(Mono.empty());
-        when(callbackNotifier.notifyCore("ch-001", "txn-001", "approved")).thenReturn(Mono.empty());
+        when(callbackNotifier.notifyCore("ch-001", "txn-001", "merchant-1", "approved")).thenReturn(Mono.empty());
 
         var request = new MfaVerifyRequest("ch-001", "valid-mfa-token");
         StepVerifier.create(service.verifyMfa(request))
@@ -74,7 +74,7 @@ class AuthVerificationServiceTest {
         when(sessionService.isSessionExpired(session)).thenReturn(false);
         when(repository.updateSessionStatus("ch-001", "declined")).thenReturn(Mono.empty());
         when(repository.saveAuthResult(eq("ch-001"), any(AuthResult.class))).thenReturn(Mono.empty());
-        when(callbackNotifier.notifyCore("ch-001", "txn-001", "declined")).thenReturn(Mono.empty());
+        when(callbackNotifier.notifyCore("ch-001", "txn-001", "merchant-1", "declined")).thenReturn(Mono.empty());
 
         var request = new MfaVerifyRequest("ch-001", "");
         StepVerifier.create(service.verifyMfa(request))
@@ -94,7 +94,7 @@ class AuthVerificationServiceTest {
         when(sessionService.isSessionExpired(session)).thenReturn(false);
         when(repository.updateSessionStatus("ch-001", "declined")).thenReturn(Mono.empty());
         when(repository.saveAuthResult(eq("ch-001"), any(AuthResult.class))).thenReturn(Mono.empty());
-        when(callbackNotifier.notifyCore("ch-001", "txn-001", "declined")).thenReturn(Mono.empty());
+        when(callbackNotifier.notifyCore("ch-001", "txn-001", "merchant-1", "declined")).thenReturn(Mono.empty());
 
         var request = new MfaVerifyRequest("ch-001", null);
         StepVerifier.create(service.verifyMfa(request))
@@ -138,7 +138,7 @@ class AuthVerificationServiceTest {
         when(sessionService.isSessionExpired(session)).thenReturn(false);
         when(repository.updateSessionStatus("ch-001", "approved")).thenReturn(Mono.empty());
         when(repository.saveAuthResult(eq("ch-001"), any(AuthResult.class))).thenReturn(Mono.empty());
-        when(callbackNotifier.notifyCore("ch-001", "txn-001", "approved"))
+        when(callbackNotifier.notifyCore("ch-001", "txn-001", "merchant-1", "approved"))
                 .thenReturn(Mono.error(new RuntimeException("Core unreachable")));
 
         var request = new MfaVerifyRequest("ch-001", "valid-token");
@@ -165,6 +165,6 @@ class AuthVerificationServiceTest {
 
         verify(repository, never()).updateSessionStatus(any(), any());
         verify(repository, never()).saveAuthResult(any(), any());
-        verify(callbackNotifier, never()).notifyCore(any(), any(), any());
+        verify(callbackNotifier, never()).notifyCore(any(), any(), any(), any());
     }
 }
