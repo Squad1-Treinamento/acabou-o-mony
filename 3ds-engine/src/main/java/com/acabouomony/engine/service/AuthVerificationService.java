@@ -13,6 +13,7 @@ import com.acabouomony.engine.model.AuthResult;
 import com.acabouomony.engine.repository.ChallengeSessionRepository;
 
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @Component
 public class AuthVerificationService {
@@ -21,10 +22,14 @@ public class AuthVerificationService {
 
     private final ChallengeSessionRepository repository;
     private final ChallengeSessionService sessionService;
+    private final CallbackNotifier callbackNotifier;
 
-    public AuthVerificationService(ChallengeSessionRepository repository, ChallengeSessionService sessionService) {
+    public AuthVerificationService(ChallengeSessionRepository repository,
+                                   ChallengeSessionService sessionService,
+                                   CallbackNotifier callbackNotifier) {
         this.repository = repository;
         this.sessionService = sessionService;
+        this.callbackNotifier = callbackNotifier;
     }
 
     public Mono<MfaVerifyResponse> verifyMfa(MfaVerifyRequest request) {
@@ -63,6 +68,10 @@ public class AuthVerificationService {
         var result = new AuthResult("approved", challengeId, transactionId, Instant.now());
         return repository.updateSessionStatus(challengeId, "approved")
                 .then(repository.saveAuthResult(challengeId, result))
+                .doOnSuccess(ignored -> callbackNotifier
+                        .notifyCore(challengeId, transactionId, "approved")
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .subscribe())
                 .then(Mono.just(new MfaVerifyResponse("approved", challengeId, transactionId)));
     }
 
@@ -70,6 +79,10 @@ public class AuthVerificationService {
         var result = new AuthResult("declined", challengeId, transactionId, Instant.now());
         return repository.updateSessionStatus(challengeId, "declined")
                 .then(repository.saveAuthResult(challengeId, result))
+                .doOnSuccess(ignored -> callbackNotifier
+                        .notifyCore(challengeId, transactionId, "declined")
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .subscribe())
                 .then(Mono.just(new MfaVerifyResponse("declined", challengeId, transactionId)));
     }
 
