@@ -1,5 +1,6 @@
 package com.acabouomony.payment.domain.entity;
 
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +36,7 @@ class AuditLogPersistenceTest {
         registry.add("spring.datasource.password", postgres::getPassword);
     }
     @Autowired
-    private javax.persistence.EntityManager em;
+    private EntityManager em;
 
     @Test
     void canPersistAndLoadAuditLog() {
