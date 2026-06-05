@@ -1,7 +1,9 @@
 package com.acabouomony.engine.dto;
 
+import jakarta.validation.constraints.NotBlank;
+
 public record MfaVerifyRequest(
-        String challengeId,
+        @NotBlank String challengeId,
         String mfaToken
 ) {
 }

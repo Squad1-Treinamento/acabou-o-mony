@@ -1,7 +1,10 @@
 package com.acabouomony.engine.security;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.Date;
 
 import javax.crypto.SecretKey;
 
@@ -24,18 +27,19 @@ public class JwtTokenProvider {
 
     private static final Logger log = LoggerFactory.getLogger(JwtTokenProvider.class);
 
-    private static final String DEV_FALLBACK_SECRET = "dev-secret-key-that-is-at-least-256-bits-long-for-hs256!!";
+    private final String secret;
+    private final long expirationSeconds;
+    private SecretKey key;
 
-    private final SecretKey key;
-
-    public JwtTokenProvider(@Value("${jwt.secret:}") String secret) {
-        String effective = (secret == null || secret.isBlank() || secret.length() < 32)
-                ? DEV_FALLBACK_SECRET
-                : secret;
-        if (effective == DEV_FALLBACK_SECRET) {
-            log.warn("jwt.secret is not configured or too short — using dev fallback. Set JWT_SECRET env var in production.");
+    public JwtTokenProvider(@Value("${jwt.secret:}") String secret,
+                            @Value("${jwt.expiration-seconds:600}") long expirationSeconds) {
+        this.secret = secret;
+        this.expirationSeconds = expirationSeconds;
+        if (secret == null || secret.isBlank() || secret.length() < 32) {
+            throw new IllegalStateException(
+                    "jwt.secret must be at least 32 characters. Set JWT_SECRET environment variable.");
         }
-        this.key = Keys.hmacShaKeyFor(effective.getBytes());
+        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
     public Mono<JwtClaims> verify(String token) {
@@ -71,5 +75,19 @@ public class JwtTokenProvider {
             log.warn("Invalid JWT: {}", e.getMessage());
             return Mono.error(new InvalidTokenException("Invalid JWT token"));
         }
+    }
+
+    public String sign(String challengeId, String transactionId, String merchantId, BigDecimal amount) {
+        var now = Instant.now();
+        var exp = now.plusSeconds(expirationSeconds);
+        return Jwts.builder()
+                .claim("challenge_id", challengeId)
+                .claim("transaction_id", transactionId)
+                .claim("merchant_id", merchantId)
+                .claim("amount", amount.toPlainString())
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(exp))
+                .signWith(key)
+                .compact();
     }
 }

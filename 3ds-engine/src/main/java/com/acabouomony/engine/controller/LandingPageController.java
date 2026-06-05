@@ -2,6 +2,8 @@ package com.acabouomony.engine.controller;
 
 import java.net.URI;
 
+import jakarta.validation.Valid;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,7 +40,11 @@ public class LandingPageController {
     @GetMapping("/challenge/{challengeId}")
     Mono<ResponseEntity<Void>> landingPage(
             @PathVariable String challengeId,
-            @RequestParam("jwt") String jwt) {
+            @RequestParam(value = "jwt", required = false) String jwt) {
+
+        if (jwt == null || jwt.isBlank()) {
+            return Mono.error(new InvalidTokenException("Missing required parameter: jwt"));
+        }
 
         return jwtTokenProvider.verify(jwt)
                 .flatMap(claims -> sessionService.resolveChallenge(challengeId))
@@ -47,7 +53,7 @@ public class LandingPageController {
     }
 
     @PostMapping("/api/v1/3ds/verify")
-    Mono<ResponseEntity<MfaVerifyResponse>> verifyMfa(@RequestBody MfaVerifyRequest request) {
+    Mono<ResponseEntity<MfaVerifyResponse>> verifyMfa(@Valid @RequestBody MfaVerifyRequest request) {
         if (request.challengeId() == null || request.challengeId().isBlank()) {
             return Mono.error(new InvalidTokenException("Missing required fields: challengeId and mfaToken"));
         }

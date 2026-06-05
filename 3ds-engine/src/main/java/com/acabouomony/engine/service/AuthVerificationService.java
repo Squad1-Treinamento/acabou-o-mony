@@ -77,7 +77,7 @@ public class AuthVerificationService {
                 .doOnSuccess(ignored -> callbackNotifier
                         .notifyCore(challengeId, transactionId, merchantId, "approved")
                         .subscribeOn(Schedulers.boundedElastic())
-                        .subscribe())
+                        .subscribe(null, error -> log.error("Callback failed for {}: {}", challengeId, error.getMessage())))
                 .then(Mono.just(new MfaVerifyResponse("approved", challengeId, transactionId)));
     }
 
@@ -88,7 +88,7 @@ public class AuthVerificationService {
                 .doOnSuccess(ignored -> callbackNotifier
                         .notifyCore(challengeId, transactionId, merchantId, "declined")
                         .subscribeOn(Schedulers.boundedElastic())
-                        .subscribe())
+                        .subscribe(null, error -> log.error("Callback failed for {}: {}", challengeId, error.getMessage())))
                 .then(Mono.just(new MfaVerifyResponse("declined", challengeId, transactionId)));
     }
 

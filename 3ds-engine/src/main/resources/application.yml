@@ -8,37 +8,53 @@ spring:
     name: 3ds-engine
 
   redis:
-    cluster:
-      # Comma-separated list of Redis Cluster nodes (host:port).
-      # Example: "192.168.1.10:6379,192.168.1.11:6379"
-      nodes: localhost:6379
+    host: localhost
+    port: 6379
     # Redis password. Marked sensitive — do not set here. Use env SPRING_REDIS_PASSWORD.
     password:
     # Redis command timeout. Format: ISO-8601 duration or number+unit (e.g., 2000ms, 2s).
     timeout: 2000ms
 
+management:
+  endpoints:
+    web:
+      # Expose only health endpoint (info/metrics omitted by default).
+      exposure:
+        include: health
+
 jwt:
   # HS256 shared secret for JWT verification. Must be at least 256 bits (32 characters).
-  # Marked sensitive — do not set here. Use env JWT_SECRET.
-  # Default: dev fallback (256-bit static string) — never use in production.
-  secret:
+  # Override with env JWT_SECRET in production.
+  secret: dev-secret-key-that-is-at-least-256-bits-long-for-hs256!!
   # JWT expiration in seconds. Used by Core Service at signing time; the Engine reads
   # the `exp` claim from the token itself. This value is informational only.
   expiration-seconds: 600
 
 3ds:
+  # API key for authenticating incoming requests (header X-API-Key).
+  # Required in production — override with env 3DS_API_KEY.
+  # Must be set to a non-empty value for POST endpoints to be accessible.
+  api-key: dev-api-key-change-in-production
+  # Enable or disable rate limiting. Disable for load tests or debugging.
+  # Override with env 3DS_RATE_LIMIT_ENABLED.
+  rate-limit-enabled: true
   # TTL for challenge sessions in Redis (seconds). After this time, the session is
   # considered expired and Redis auto-evicts the key. Default: 600 (10 minutes).
   session-ttl-seconds: 600
   # TTL for authentication results in Redis (seconds). Used for idempotency lookups.
   # Must be long enough to cover the idempotency window. Default: 86400 (24 hours).
   auth-result-ttl-seconds: 86400
+  # Base URL of the 3DS challenge landing page. The Engine appends
+  # "/{challengeId}?jwt={token}" to build the redirect URL returned at initiation.
+  # Default: http://localhost:8081/challenge
+  redirect-base-url: http://localhost:8081/challenge
   # Base URL of the Core Service callback endpoint. The Engine appends
   # "/api/v1/payments/3ds-callback" to this URL when notifying Core of MFA results.
   # No default — must be configured per environment.
   # Example: http://core-service:8080
   callback-url: http://localhost:8080/api/v1/payments/3ds-callback
-  # Maximum incoming requests per second (rate limiting). Placeholder — not yet enforced.
+  # Maximum incoming requests per second (rate limiting per-instance, sliding window).
+  # Override with env 3DS_RATE_LIMIT_PER_SECOND. Set to 0 to disable.
   rate-limit-per-second: 100
 
 risk:
