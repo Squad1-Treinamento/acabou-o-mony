@@ -2,9 +2,6 @@ package com.acabouomony.engine.security;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Date;
 
 import javax.crypto.SecretKey;
 
@@ -77,17 +74,4 @@ public class JwtTokenProvider {
         }
     }
 
-    public String sign(String challengeId, String transactionId, String merchantId, BigDecimal amount) {
-        var now = Instant.now();
-        var exp = now.plusSeconds(expirationSeconds);
-        return Jwts.builder()
-                .claim("challenge_id", challengeId)
-                .claim("transaction_id", transactionId)
-                .claim("merchant_id", merchantId)
-                .claim("amount", amount.toPlainString())
-                .issuedAt(Date.from(now))
-                .expiration(Date.from(exp))
-                .signWith(key)
-                .compact();
-    }
 }

@@ -15,7 +15,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.acabouomony.engine.exception.ChallengeExpiredException;
 import com.acabouomony.engine.model.ChallengeSession;
 import com.acabouomony.engine.repository.ChallengeSessionRepository;
-import com.acabouomony.engine.security.JwtTokenProvider;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -26,15 +25,11 @@ class ChallengeSessionServiceTest {
     @Mock
     private ChallengeSessionRepository repository;
 
-    @Mock
-    private JwtTokenProvider jwtTokenProvider;
-
     private ChallengeSessionService service;
 
     @BeforeEach
     void setUp() {
-        service = new ChallengeSessionService(repository, jwtTokenProvider, 600L,
-                "http://localhost:8081/challenge");
+        service = new ChallengeSessionService(repository);
     }
 
     @Test

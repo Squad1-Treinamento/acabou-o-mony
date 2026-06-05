@@ -51,7 +51,6 @@ class ThreeDsChallengeControllerIntegrationTest {
         registry.add("spring.redis.host", redis::getHost);
         registry.add("spring.redis.port", () -> redis.getMappedPort(6379));
         registry.add("3ds.security.enabled", () -> "false");
-        registry.add("3ds.rate-limit-enabled", () -> "false");
     }
 
     @TestConfiguration

@@ -76,7 +76,7 @@ public class AuthVerificationService {
         var result = new AuthResult("approved", challengeId, transactionId, Instant.now());
         return repository.updateSessionStatus(challengeId, "approved")
                 .then(repository.saveAuthResult(challengeId, result))
-                .flatMap(ignored -> fireCallback(challengeId, transactionId, merchantId, "approved"))
+                .then(fireCallback(challengeId, transactionId, merchantId, "approved"))
                 .then(Mono.just(new MfaVerifyResponse("approved", challengeId, transactionId)));
     }
 
@@ -84,7 +84,7 @@ public class AuthVerificationService {
         var result = new AuthResult("declined", challengeId, transactionId, Instant.now());
         return repository.updateSessionStatus(challengeId, "declined")
                 .then(repository.saveAuthResult(challengeId, result))
-                .flatMap(ignored -> fireCallback(challengeId, transactionId, merchantId, "declined"))
+                .then(fireCallback(challengeId, transactionId, merchantId, "declined"))
                 .then(Mono.just(new MfaVerifyResponse("declined", challengeId, transactionId)));
     }
 
