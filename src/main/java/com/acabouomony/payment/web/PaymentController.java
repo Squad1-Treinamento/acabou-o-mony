@@ -4,10 +4,7 @@ import com.acabouomony.payment.domain.dto.PaymentRequest;
 import com.acabouomony.payment.domain.entity.Transaction;
 import com.acabouomony.payment.domain.exception.PaymentValidationException;
 import com.acabouomony.payment.domain.model.PaymentStatus;
-import com.acabouomony.payment.domain.service.DuplicatePaymentHandler;
-import com.acabouomony.payment.domain.service.IdempotencyService;
-import com.acabouomony.payment.domain.service.MerchantAuthService;
-import com.acabouomony.payment.domain.service.PaymentRequestValidator;
+import com.acabouomony.payment.domain.service.*;
 import com.acabouomony.payment.infrastructure.persistence.TransactionRepository;
 import com.acabouomony.payment.web.dto.PaymentResponseDTO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,25 +25,29 @@ import java.util.UUID;
  * Implements payment request handling with:
  * - Merchant authentication
  * - Request validation
- * - Idempotency enforcement (fast-path + slow-path)
+ * - Response caching (fast-path)
+ * - Idempotency enforcement (slow-path)
  * - Duplicate detection with payload hash validation
  * - Transaction persistence
  * 
  * Spec: spec-001-core-payment-processing.md
  * Task: task-009-db-idempotency-enforcement.md
+ * Task: task-010-duplicate-request-recovery.md
  * 
  * Payment Flow:
- * 1. Authenticate merchant (API key validation)
- * 2. Validate request payload (amount, currency, payment method)
- * 3. Check for duplicate (IdempotencyService.checkDuplicate)
+ * 1. Check response cache (fast-path)
+ * 2. Authenticate merchant (API key validation)
+ * 3. Validate request payload (amount, currency, payment method)
+ * 4. Check for duplicate (IdempotencyService.checkDuplicate)
  *    - If duplicate found and safe to cache: return cached response
- *    - If duplicate found but not safe: return 202/409
- * 4. If new request:
+ *    - If duplicate found but not safe: return appropriate status (202/409)
+ * 5. If new request:
  *    - Prepare payload hash
  *    - Create new transaction
  *    - Persist with payload hash
  *    - Handle constraint violations (fallback recovery)
- * 5. Continue with payment processing (Phase 3)
+ * 6. Cache response (24-hour TTL)
+ * 7. Continue with payment processing (Phase 3)
  */
 @RestController
 @RequestMapping("/api/v1/payments")
@@ -65,6 +66,9 @@ public class PaymentController {
     
     @Autowired
     private DuplicatePaymentHandler duplicatePaymentHandler;
+    
+    @Autowired
+    private DuplicateRequestRecoveryService duplicateRequestRecoveryService;
     
     @Autowired
     private TransactionRepository transactionRepository;
@@ -97,11 +101,23 @@ public class PaymentController {
             request.getAmount(), request.getCurrency(), request.getIdempotencyKey());
         
         try {
-            // Step 1: Authenticate merchant
+            // Step 0: Authenticate merchant
             // TODO: Implement merchant authentication (Task-004)
             // For now, use a placeholder merchant ID
             UUID merchantId = UUID.fromString("00000000-0000-0000-0000-000000000001");
             logger.debug("Merchant authenticated: {}", merchantId);
+            
+            // Step 1: Check response cache (fast-path)
+            Optional<PaymentResponseDTO> cachedResponse = duplicateRequestRecoveryService.recoverFromCache(
+                merchantId,
+                request.getIdempotencyKey()
+            );
+            
+            if (cachedResponse.isPresent()) {
+                logger.info("Cache hit: returning cached response for idempotency_key={}",
+                    request.getIdempotencyKey());
+                return ResponseEntity.ok(cachedResponse.get());
+            }
             
             // Step 2: Validate request payload
             paymentRequestValidator.validate(request);
@@ -122,11 +138,33 @@ public class PaymentController {
                 // Check if safe to return cached response
                 if (idempotencyService.isSafeToReturnCachedResponse(tx)) {
                     logger.debug("Returning cached response for transaction {}", tx.getId());
-                    return duplicatePaymentHandler.buildDuplicateResponse(tx);
+                    ResponseEntity<PaymentResponseDTO> response = duplicatePaymentHandler.buildDuplicateResponse(tx);
+                    
+                    // Cache the response
+                    if (response.getBody() != null) {
+                        duplicateRequestRecoveryService.cacheResponse(
+                            merchantId,
+                            request.getIdempotencyKey(),
+                            response.getBody()
+                        );
+                    }
+                    
+                    return response;
                 } else {
                     // Not safe to cache (UNKNOWN or in-progress)
                     logger.debug("Returning appropriate status for in-progress/unknown transaction {}", tx.getId());
-                    return duplicatePaymentHandler.buildDuplicateResponse(tx);
+                    ResponseEntity<PaymentResponseDTO> response = duplicatePaymentHandler.buildDuplicateResponse(tx);
+                    
+                    // Cache the response
+                    if (response.getBody() != null) {
+                        duplicateRequestRecoveryService.cacheResponse(
+                            merchantId,
+                            request.getIdempotencyKey(),
+                            response.getBody()
+                        );
+                    }
+                    
+                    return response;
                 }
             }
             
@@ -157,8 +195,19 @@ public class PaymentController {
                 Transaction saved = transactionRepository.save(transaction);
                 logger.info("Transaction persisted: id={}, status={}", saved.getId(), saved.getStatus());
                 
-                // Return response for new transaction
-                return duplicatePaymentHandler.buildNewPaymentResponse(saved);
+                // Build response for new transaction
+                ResponseEntity<PaymentResponseDTO> response = duplicatePaymentHandler.buildNewPaymentResponse(saved);
+                
+                // Cache the response
+                if (response.getBody() != null) {
+                    duplicateRequestRecoveryService.cacheResponse(
+                        merchantId,
+                        request.getIdempotencyKey(),
+                        response.getBody()
+                    );
+                }
+                
+                return response;
                 
             } catch (DataIntegrityViolationException e) {
                 // Constraint violation: fallback to duplicate recovery
@@ -171,7 +220,18 @@ public class PaymentController {
                 );
                 
                 logger.info("Duplicate payment recovered: id={}, status={}", recovered.getId(), recovered.getStatus());
-                return duplicatePaymentHandler.buildDuplicateResponse(recovered);
+                ResponseEntity<PaymentResponseDTO> response = duplicatePaymentHandler.buildDuplicateResponse(recovered);
+                
+                // Cache the response
+                if (response.getBody() != null) {
+                    duplicateRequestRecoveryService.cacheResponse(
+                        merchantId,
+                        request.getIdempotencyKey(),
+                        response.getBody()
+                    );
+                }
+                
+                return response;
             }
             
         } catch (PaymentValidationException e) {
