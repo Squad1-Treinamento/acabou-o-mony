@@ -23,6 +23,8 @@ Doc Index (start here)
 - `spec/tasks/index.md`
 - `spec/adrs/index.md`
 - `CONTEXT.md` (TBD: stack, commands, environments)
+- `ARCHITECTURE.md`
+
 
 Guardrails
 - Do not invent requirements; follow specs and acceptance criteria only.
