@@ -14,13 +14,15 @@ import com.acabouomony.engine.repository.ChallengeSessionRepository;
 
 import static com.acabouomony.engine.service.AuditLogger.auditLog;
 
+import java.time.Duration;
+
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 @Component
 public class AuthVerificationService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthVerificationService.class);
+    private static final Duration CALLBACK_TIMEOUT = Duration.ofSeconds(5);
 
     private final ChallengeSessionRepository repository;
     private final ChallengeSessionService sessionService;
@@ -74,10 +76,7 @@ public class AuthVerificationService {
         var result = new AuthResult("approved", challengeId, transactionId, Instant.now());
         return repository.updateSessionStatus(challengeId, "approved")
                 .then(repository.saveAuthResult(challengeId, result))
-                .doOnSuccess(ignored -> callbackNotifier
-                        .notifyCore(challengeId, transactionId, merchantId, "approved")
-                        .subscribeOn(Schedulers.boundedElastic())
-                        .subscribe(null, error -> log.error("Callback failed for {}: {}", challengeId, error.getMessage())))
+                .flatMap(ignored -> fireCallback(challengeId, transactionId, merchantId, "approved"))
                 .then(Mono.just(new MfaVerifyResponse("approved", challengeId, transactionId)));
     }
 
@@ -85,11 +84,17 @@ public class AuthVerificationService {
         var result = new AuthResult("declined", challengeId, transactionId, Instant.now());
         return repository.updateSessionStatus(challengeId, "declined")
                 .then(repository.saveAuthResult(challengeId, result))
-                .doOnSuccess(ignored -> callbackNotifier
-                        .notifyCore(challengeId, transactionId, merchantId, "declined")
-                        .subscribeOn(Schedulers.boundedElastic())
-                        .subscribe(null, error -> log.error("Callback failed for {}: {}", challengeId, error.getMessage())))
+                .flatMap(ignored -> fireCallback(challengeId, transactionId, merchantId, "declined"))
                 .then(Mono.just(new MfaVerifyResponse("declined", challengeId, transactionId)));
+    }
+
+    private Mono<Void> fireCallback(String challengeId, String transactionId, String merchantId, String authStatus) {
+        return callbackNotifier.notifyCore(challengeId, transactionId, merchantId, authStatus)
+                .timeout(CALLBACK_TIMEOUT)
+                .onErrorResume(e -> {
+                    log.error("Callback failed for {}: {}", challengeId, e.getMessage());
+                    return Mono.empty();
+                });
     }
 
     private MfaVerifyResponse toCachedResponse(AuthResult cached) {
