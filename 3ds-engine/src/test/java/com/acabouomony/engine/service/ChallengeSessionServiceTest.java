@@ -6,15 +6,16 @@ import static org.mockito.Mockito.when;
 import java.math.BigDecimal;
 import java.time.Instant;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.acabouomony.engine.exception.ChallengeExpiredException;
 import com.acabouomony.engine.model.ChallengeSession;
 import com.acabouomony.engine.repository.ChallengeSessionRepository;
+import com.acabouomony.engine.security.JwtTokenProvider;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -25,8 +26,16 @@ class ChallengeSessionServiceTest {
     @Mock
     private ChallengeSessionRepository repository;
 
-    @InjectMocks
+    @Mock
+    private JwtTokenProvider jwtTokenProvider;
+
     private ChallengeSessionService service;
+
+    @BeforeEach
+    void setUp() {
+        service = new ChallengeSessionService(repository, jwtTokenProvider, 600L,
+                "http://localhost:8081/challenge");
+    }
 
     @Test
     void shouldReturnSessionWhenNotExpired() {

@@ -154,6 +154,7 @@ class AuthVerificationServiceTest {
     void shouldReturnCachedResultWhenIdempotencyHit() {
         var cached = new AuthResult("approved", "ch-001", "txn-001", Instant.now());
         when(repository.findAuthResult("ch-001")).thenReturn(Mono.just(cached));
+        when(repository.findSessionById("ch-001")).thenReturn(Mono.empty());
 
         var request = new MfaVerifyRequest("ch-001", "any-token");
         StepVerifier.create(service.verifyMfa(request))

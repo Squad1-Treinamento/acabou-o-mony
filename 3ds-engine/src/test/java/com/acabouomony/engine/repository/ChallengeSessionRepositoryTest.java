@@ -33,16 +33,22 @@ class ChallengeSessionRepositoryTest {
     private ReactiveRedisTemplate<String, Object> redis;
 
     @Mock
+    private ReactiveRedisTemplate<String, AuthResult> authRedis;
+
+    @Mock
     private ReactiveHashOperations<String, Object, Object> hashOps;
 
     @Mock
     private ReactiveValueOperations<String, Object> valueOps;
 
+    @Mock
+    private ReactiveValueOperations<String, AuthResult> authValueOps;
+
     private ChallengeSessionRepository repo;
 
     @BeforeEach
     void setUp() {
-        repo = new ChallengeSessionRepository(redis, 600L, 86400L);
+        repo = new ChallengeSessionRepository(redis, authRedis, 600L, 86400L);
     }
 
     private ChallengeSession createSession() {
@@ -75,14 +81,14 @@ class ChallengeSessionRepositoryTest {
 
         var key = "3ds:session:ch-001";
         var entries = Map.<Object, Object>of(
-                "transactionId", "txn-001",
-                "merchantId", "merchant-1",
+                "transaction_id", "txn-001",
+                "merchant_id", "merchant-1",
                 "amount", "150.00",
                 "currency", "BRL",
-                "cardToken", "card-token-abc",
-                "acsUrl", "https://acs.bank.com/auth",
+                "card_token", "card-token-abc",
+                "acs_url", "https://acs.bank.com/auth",
                 "status", "pending",
-                "createdAt", "2026-06-02T10:00:00Z",
+                "created_at", "2026-06-02T10:00:00Z",
                 "ttl", "600");
 
         when(hashOps.entries(key)).thenReturn(
@@ -130,27 +136,27 @@ class ChallengeSessionRepositoryTest {
 
     @Test
     void saveAuthResultShouldSetValueWithTtl() {
-        when(redis.opsForValue()).thenReturn(valueOps);
+        when(authRedis.opsForValue()).thenReturn(authValueOps);
 
         var result = new AuthResult("approved", "ch-001", "txn-001", Instant.now());
         var key = "3ds:auth:ch-001";
 
-        when(valueOps.set(eq(key), eq(result), any(Duration.class))).thenReturn(Mono.just(true));
+        when(authValueOps.set(eq(key), eq(result), any(Duration.class))).thenReturn(Mono.just(true));
 
         StepVerifier.create(repo.saveAuthResult("ch-001", result))
                 .verifyComplete();
 
-        verify(valueOps).set(eq(key), eq(result), eq(Duration.ofSeconds(86400L)));
+        verify(authValueOps).set(eq(key), eq(result), eq(Duration.ofSeconds(86400L)));
     }
 
     @Test
     void findAuthResultShouldReturnResultWhenExists() {
-        when(redis.opsForValue()).thenReturn(valueOps);
+        when(authRedis.opsForValue()).thenReturn(authValueOps);
 
         var result = new AuthResult("approved", "ch-001", "txn-001", Instant.now());
         var key = "3ds:auth:ch-001";
 
-        when(valueOps.get(key)).thenReturn(Mono.just(result));
+        when(authValueOps.get(key)).thenReturn(Mono.just(result));
 
         StepVerifier.create(repo.findAuthResult("ch-001"))
                 .expectNext(result)
@@ -159,11 +165,11 @@ class ChallengeSessionRepositoryTest {
 
     @Test
     void findAuthResultShouldEmitEmptyWhenNotFound() {
-        when(redis.opsForValue()).thenReturn(valueOps);
+        when(authRedis.opsForValue()).thenReturn(authValueOps);
 
         var key = "3ds:auth:ch-999";
 
-        when(valueOps.get(key)).thenReturn(Mono.empty());
+        when(authValueOps.get(key)).thenReturn(Mono.empty());
 
         StepVerifier.create(repo.findAuthResult("ch-999"))
                 .verifyComplete();

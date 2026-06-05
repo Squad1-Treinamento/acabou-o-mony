@@ -109,8 +109,8 @@ class LandingPageControllerTest {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.status").isEqualTo("approved")
-                .jsonPath("$.challengeId").isEqualTo("ch-001")
-                .jsonPath("$.transactionId").isEqualTo("txn-001");
+                .jsonPath("$.challenge_id").isEqualTo("ch-001")
+                .jsonPath("$.transaction_id").isEqualTo("txn-001");
     }
 
     @Test

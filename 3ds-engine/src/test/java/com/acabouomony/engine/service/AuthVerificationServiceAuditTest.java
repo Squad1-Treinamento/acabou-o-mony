@@ -131,6 +131,7 @@ class AuthVerificationServiceAuditTest {
     void shouldLogCachedEvent() {
         var cached = new AuthResult("approved", "ch-001", "txn-001", Instant.now());
         when(repository.findAuthResult("ch-001")).thenReturn(Mono.just(cached));
+        when(repository.findSessionById("ch-001")).thenReturn(Mono.empty());
 
         StepVerifier.create(service.verifyMfa(new MfaVerifyRequest("ch-001", "any")))
                 .expectNextCount(1)

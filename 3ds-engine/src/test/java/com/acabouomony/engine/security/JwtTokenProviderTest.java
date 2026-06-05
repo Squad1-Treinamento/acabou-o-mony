@@ -27,7 +27,7 @@ class JwtTokenProviderTest {
 
     @BeforeEach
     void setUp() {
-        provider = new JwtTokenProvider(SECRET);
+        provider = new JwtTokenProvider(SECRET, 600);
     }
 
     @Test
@@ -132,27 +132,4 @@ class JwtTokenProviderTest {
                 .verify(Duration.ofSeconds(5));
     }
 
-    @Test
-    void shouldWorkWithFallbackSecretWhenEmpty() {
-        var fallbackProvider = new JwtTokenProvider("");
-        var fallbackKey = Keys.hmacShaKeyFor(
-                "dev-secret-key-that-is-at-least-256-bits-long-for-hs256!!".getBytes());
-        var now = Instant.now();
-        var token = Jwts.builder()
-                .claim("challenge_id", "ch-005")
-                .claim("transaction_id", "txn-005")
-                .claim("merchant_id", "merchant-1")
-                .claim("amount", "500.00")
-                .issuedAt(Date.from(now))
-                .expiration(Date.from(now.plusSeconds(600)))
-                .signWith(fallbackKey)
-                .compact();
-
-        StepVerifier.create(fallbackProvider.verify(token))
-                .assertNext(claims -> {
-                    assertThat(claims.challengeId()).isEqualTo("ch-005");
-                    assertThat(claims.transactionId()).isEqualTo("txn-005");
-                })
-                .verifyComplete();
-    }
 }
