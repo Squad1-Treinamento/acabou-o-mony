@@ -1,3 +1,10 @@
+---
+id: task-013
+status: not-started
+links:
+  - spec/tech-plans/plan-001-core-payment-processing.md 
+  - spec/specs/spec-001-core-payment-processing.md 
+---
 # 013 - UNKNOWN State Handling
 
 ## Description

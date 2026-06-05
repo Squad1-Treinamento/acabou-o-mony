@@ -1,6 +1,6 @@
 ---
 id: task-004
-status: in-progress
+status: complete
 links:
   - spec/tech-plans/plan-001-core-payment-processing.md (Phase 2, merchant authentication)
   - spec/specs/spec-001-core-payment-processing.md (Security Rules)

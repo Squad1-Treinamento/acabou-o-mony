@@ -1,3 +1,11 @@
+---
+id: task-014
+status: not-started
+links:
+  - spec/tech-plans/plan-001-core-payment-processing.md 
+  - spec/specs/spec-001-core-payment-processing.md 
+---
+
 # 014 - Reconciliation Worker
 
 ## Description

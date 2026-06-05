@@ -1,6 +1,9 @@
 ---
 id: task-019
-status: in-progress
+status: not-started
+links:
+  - spec/tech-plans/plan-001-core-payment-processing.md 
+  - spec/specs/spec-001-core-payment-processing.md 
 ---
 
 # 020 - Structured Audit Logging
