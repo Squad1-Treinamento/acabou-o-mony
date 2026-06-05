@@ -4,6 +4,7 @@ import com.acabouomony.payment.domain.entity.Transaction;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -12,12 +13,25 @@ import java.util.UUID;
  * Provides standard CRUD operations and persistence capabilities.
  * JPA/Hibernate automatically handles @Version annotation for optimistic locking.
  * 
- * No custom methods needed - using built-in save() for state transitions.
+ * Custom query methods:
+ * - findByMerchantIdAndIdempotencyKey: Used for idempotency duplicate detection
  */
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, UUID> {
-    // Standard JPA operations provided by framework:
-    // - save(Transaction) - Used for both inserts and updates with version check
-    // - findById(UUID) - Used to load transaction for state transitions
-    // - All other CRUD operations as needed
+    
+    /**
+     * Finds existing transaction by merchant ID and idempotency key.
+     * 
+     * Used for idempotency coordination:
+     * - Detects duplicate requests (same merchant + same idempotency_key)
+     * - Validates payload hash to ensure identical retry
+     * 
+     * Spec: spec-001-core-payment-processing.md - Idempotency Rules
+     * Task: task-007-payload-hashing.md
+     * 
+     * @param merchantId The merchant ID
+     * @param idempotencyKey The idempotency key
+     * @return Optional containing transaction if found, empty otherwise
+     */
+    Optional<Transaction> findByMerchantIdAndIdempotencyKey(UUID merchantId, UUID idempotencyKey);
 }
