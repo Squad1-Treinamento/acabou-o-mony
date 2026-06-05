@@ -20,7 +20,7 @@ class PaymentStatusEnumTest {
         PaymentStatus[] statuses = PaymentStatus.values();
 
         // Assert
-        assertThat(statuses).hasLength(9);
+        assertThat(statuses).hasSize(9);
     }
 
     @Test

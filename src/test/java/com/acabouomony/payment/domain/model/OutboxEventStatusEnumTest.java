@@ -20,7 +20,7 @@ class OutboxEventStatusEnumTest {
         OutboxEventStatus[] statuses = OutboxEventStatus.values();
 
         // Assert
-        assertThat(statuses).hasLength(3);
+        assertThat(statuses).hasSize(3);
     }
 
     @Test
