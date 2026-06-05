@@ -1,5 +1,6 @@
 package com.acabouomony.payment.domain.entity;
 
+import com.acabouomony.payment.domain.model.OutboxEventStatus;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -45,7 +46,7 @@ class OutboxEventPersistenceTest {
                 .eventType("payment.created")
                 .aggregateId(UUID.randomUUID())
                 .payload("{\"id\":123}")
-                .status("PENDING")
+                .status(OutboxEventStatus.valueOf("PENDING"))
                 .retryCount(0)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())

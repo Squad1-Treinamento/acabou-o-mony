@@ -14,10 +14,20 @@ CREATE TABLE transactions (
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
     UNIQUE(merchant_id, idempotency_key),
+    CHECK (status IN ('CREATED', 'VALIDATED', 'CHALLENGE_PENDING', 'AUTHENTICATED', 'PROCESSING', 'UNKNOWN', 'COMPLETED', 'DECLINED', 'FAILED')),
     INDEX idx_merchant_id (merchant_id),
     INDEX idx_status (status),
-    INDEX idx_created_at (created_at)
+    INDEX idx_created_at (created_at),
+    INDEX idx_merchant_id_created_at (merchant_id, created_at)
 );
+
+-- Function for audit_logs immutability (must be created before trigger)
+CREATE OR REPLACE FUNCTION raise_immutable_error()
+RETURNS TRIGGER AS $$
+BEGIN
+    RAISE EXCEPTION 'audit_logs table is immutable; UPDATE operations are not allowed';
+END;
+$$ LANGUAGE plpgsql;
 
 CREATE TABLE audit_logs (
     id UUID PRIMARY KEY,
@@ -27,9 +37,15 @@ CREATE TABLE audit_logs (
     actor VARCHAR(50) NOT NULL,
     checksum VARCHAR(64) NOT NULL,
     created_at TIMESTAMP NOT NULL,
+    CHECK (new_status IN ('CREATED', 'VALIDATED', 'CHALLENGE_PENDING', 'AUTHENTICATED', 'PROCESSING', 'UNKNOWN', 'COMPLETED', 'DECLINED', 'FAILED')),
+    CHECK (old_status IS NULL OR old_status IN ('CREATED', 'VALIDATED', 'CHALLENGE_PENDING', 'AUTHENTICATED', 'PROCESSING', 'UNKNOWN', 'COMPLETED', 'DECLINED', 'FAILED')),
     INDEX idx_transaction_id (transaction_id),
     INDEX idx_created_at (created_at)
 );
+
+-- Trigger to prevent UPDATE on audit_logs (INSERT-ONLY table)
+CREATE TRIGGER audit_logs_immutable BEFORE UPDATE ON audit_logs
+FOR EACH ROW EXECUTE FUNCTION raise_immutable_error();
 
 CREATE TABLE outbox_events (
     id UUID PRIMARY KEY,
@@ -41,6 +57,8 @@ CREATE TABLE outbox_events (
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
     delivered_at TIMESTAMP NULL,
+    CHECK (status IN ('PENDING', 'DELIVERED', 'FAILED')),
+    CHECK (retry_count >= 0 AND retry_count <= 5),
     INDEX idx_status (status),
     INDEX idx_created_at (created_at)
 );

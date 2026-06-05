@@ -1,5 +1,6 @@
 package com.acabouomony.payment.domain.entity;
 
+import com.acabouomony.payment.domain.model.PaymentStatus;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -46,7 +47,7 @@ class TransactionPersistenceTest {
                 .idempotencyKey(UUID.randomUUID())
                 .amount(123_45)
                 .currency("BRL")
-                .status("CREATED")
+                .status(PaymentStatus.valueOf("CREATED"))
                 .payloadHash("abc123def456")
                 .maskedCard("411111XXXXXX1111")
                 .cardTokenId("tok123")

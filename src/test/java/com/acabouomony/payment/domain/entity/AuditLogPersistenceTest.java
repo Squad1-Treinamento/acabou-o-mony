@@ -2,6 +2,7 @@ package com.acabouomony.payment.domain.entity;
 
 import com.acabouomony.payment.domain.entity.AuditLog;
 import com.acabouomony.payment.domain.entity.Transaction;
+import com.acabouomony.payment.domain.model.PaymentStatus;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -48,7 +49,7 @@ class AuditLogPersistenceTest {
                 .idempotencyKey(UUID.randomUUID())
                 .amount(5000)
                 .currency("USD")
-                .status("CREATED")
+                .status(PaymentStatus.valueOf("CREATED"))
                 .payloadHash("aabbcc")
                 .maskedCard("510510XXXXXX5100")
                 .cardTokenId("tokx")
@@ -61,8 +62,8 @@ class AuditLogPersistenceTest {
         AuditLog log = AuditLog.builder()
                 .id(UUID.randomUUID())
                 .transaction(tx)
-                .oldStatus("CREATED")
-                .newStatus("VALIDATED")
+                .oldStatus(PaymentStatus.valueOf("CREATED"))
+                .newStatus(PaymentStatus.valueOf("VALIDATED"))
                 .actor("system")
                 .checksum("fakehash123")
                 .createdAt(Instant.now())
