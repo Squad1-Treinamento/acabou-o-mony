@@ -1,0 +1,11 @@
+# .claude
+.devcontainer/.env
+.claude/settings.local.json
+.claude/auth.local.md
+.claude-worktrees/
+.DS_Store
+tasks/**
+qa-output/**
+debug-output/
+.playwright-cli/
+.env

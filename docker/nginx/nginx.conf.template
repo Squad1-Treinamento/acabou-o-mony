@@ -1,3 +1,9 @@
+limit_req_zone $binary_remote_addr zone=req_limit:10m rate=10r/s;
+
+upstream backend_api {
+  ${UPSTREAM_SERVERS}
+}
+
 server {
   listen 80;
 
@@ -5,8 +11,6 @@ server {
   error_log /var/log/nginx/error.log;
 
   client_max_body_size 2m;
-
-  limit_req_zone $binary_remote_addr zone=req_limit:10m rate=10r/s;
 
   location = /healthz {
     add_header Content-Type text/plain;
@@ -27,8 +31,4 @@ server {
 
     proxy_pass http://backend_api;
   }
-}
-
-upstream backend_api {
-  ${UPSTREAM_SERVERS}
 }
