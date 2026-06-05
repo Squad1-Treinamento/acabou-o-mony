@@ -1,6 +1,7 @@
 package com.acabouomony.payment.infrastructure.exception;
 
 import com.acabouomony.payment.domain.exception.PaymentValidationException;
+import com.acabouomony.payment.domain.exception.CardValidationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
  * 
  * Handles:
  * - PaymentValidationException (400 Bad Request)
+ * - CardValidationException (400 Bad Request)
  * - MethodArgumentNotValidException (400 Bad Request)
  * - Generic exceptions (500 Internal Server Error)
  * 
@@ -49,6 +51,33 @@ public class GlobalExceptionHandler {
             .timestamp(Instant.now())
             .status(HttpStatus.BAD_REQUEST.value())
             .error("Validation Error")
+            .message(ex.getMessage())
+            .path(request.getDescription(false).replace("uri=", ""))
+            .build();
+        
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+    
+    /**
+     * Handles CardValidationException.
+     * 
+     * Returns 400 Bad Request with card validation error details.
+     * 
+     * @param ex The CardValidationException
+     * @param request The web request
+     * @return ResponseEntity with error details
+     */
+    @ExceptionHandler(CardValidationException.class)
+    public ResponseEntity<ErrorResponse> handleCardValidationException(
+            CardValidationException ex,
+            WebRequest request) {
+        
+        logger.warn("Card validation error: {}", ex.getMessage());
+        
+        ErrorResponse errorResponse = ErrorResponse.builder()
+            .timestamp(Instant.now())
+            .status(HttpStatus.BAD_REQUEST.value())
+            .error("Card Validation Error")
             .message(ex.getMessage())
             .path(request.getDescription(false).replace("uri=", ""))
             .build();
