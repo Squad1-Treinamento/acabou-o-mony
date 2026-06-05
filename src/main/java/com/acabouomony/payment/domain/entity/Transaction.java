@@ -4,6 +4,8 @@ import com.acabouomony.payment.domain.model.PaymentStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import org.antlr.v4.runtime.misc.NotNull;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -26,30 +28,30 @@ public class Transaction {
     @Column(nullable = false, updatable = false)
     private UUID id;
 
-    @NotNull(message = "merchant_id cannot be null")
+    @NotNull
     @Column(name = "merchant_id", nullable = false)
     private UUID merchantId;
 
-    @NotNull(message = "idempotency_key cannot be null")
+    @NotNull
     @Column(name = "idempotency_key", nullable = false)
     private UUID idempotencyKey;
 
-    @NotNull(message = "amount cannot be null")
+    @NotNull
     @Min(value = 1, message = "amount must be greater than 0")
     @Column(nullable = false)
     private long amount;
 
-    @NotNull(message = "currency cannot be null")
+    @NotNull
     @Size(min = 3, max = 3, message = "currency must be exactly 3 characters (ISO 4217)")
     @Column(length = 3, nullable = false)
     private String currency;
 
-    @NotNull(message = "status cannot be null")
+    @NotNull
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
     private PaymentStatus status;
 
-    @NotNull(message = "payload_hash cannot be null")
+    @NotNull
     @Column(name = "payload_hash", length = 64, nullable = false)
     private String payloadHash;
 
@@ -66,11 +68,11 @@ public class Transaction {
     @Column(nullable = false)
     private Integer version;
 
-    @NotNull(message = "created_at cannot be null")
+    @NotNull
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @NotNull(message = "updated_at cannot be null")
+    @NotNull
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 }
