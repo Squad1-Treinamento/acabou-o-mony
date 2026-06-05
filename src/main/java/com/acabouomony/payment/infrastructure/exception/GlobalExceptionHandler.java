@@ -2,6 +2,7 @@ package com.acabouomony.payment.infrastructure.exception;
 
 import com.acabouomony.payment.domain.exception.PaymentValidationException;
 import com.acabouomony.payment.domain.exception.CardValidationException;
+import com.acabouomony.payment.domain.exception.DuplicatePaymentException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
  * Handles:
  * - PaymentValidationException (400 Bad Request)
  * - CardValidationException (400 Bad Request)
+ * - DuplicatePaymentException (409 Conflict)
  * - MethodArgumentNotValidException (400 Bad Request)
  * - Generic exceptions (500 Internal Server Error)
  * 
@@ -83,6 +85,34 @@ public class GlobalExceptionHandler {
             .build();
         
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+    
+    /**
+     * Handles DuplicatePaymentException.
+     * 
+     * Returns 409 Conflict when duplicate payment detected.
+     * 
+     * @param ex The DuplicatePaymentException
+     * @param request The web request
+     * @return ResponseEntity with error details
+     */
+    @ExceptionHandler(DuplicatePaymentException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicatePaymentException(
+            DuplicatePaymentException ex,
+            WebRequest request) {
+        
+        logger.warn("Duplicate payment detected: transaction_id={}, merchant_id={}, idempotency_key={}",
+            ex.getTransactionId(), ex.getMerchantId(), ex.getIdempotencyKey());
+        
+        ErrorResponse errorResponse = ErrorResponse.builder()
+            .timestamp(Instant.now())
+            .status(HttpStatus.CONFLICT.value())
+            .error("Duplicate Payment")
+            .message(ex.getMessage())
+            .path(request.getDescription(false).replace("uri=", ""))
+            .build();
+        
+        return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
     }
     
     /**
