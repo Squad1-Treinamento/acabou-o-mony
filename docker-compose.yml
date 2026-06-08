@@ -31,6 +31,20 @@ services:
     networks:
       - edge-net
 
+  # # Servidor de Teste A
+  # servico-a:
+  #   image: httpd:latest
+  #   entrypoint: /bin/sh -c "echo '<h1>Servidor A Customizado</h1>' > /usr/local/apache2/htdocs/index.html && httpd-foreground"
+  #   networks:
+  #     - edge-net
+
+  # # Servidor de Teste B
+  # servico-b:
+  #   image: httpd:latest
+  #   entrypoint: /bin/sh -c "echo '<h1>Servidor B Customizado</h1>' > /usr/local/apache2/htdocs/index.html && httpd-foreground"
+  #   networks:
+  #     - edge-net
+  
   # Example backend service (optional)
   # app:
   #   image: nginx:alpine
