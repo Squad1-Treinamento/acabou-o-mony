@@ -4,6 +4,7 @@ import com.acabouomony.payment.domain.entity.AuditLog;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -14,5 +15,11 @@ import java.util.UUID;
  */
 @Repository
 public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
-    // Standard JPA operations provided by framework
+    /**
+     * Find all audit log entries for a transaction.
+     * 
+     * @param transactionId The transaction ID
+     * @return List of audit log entries
+     */
+    List<AuditLog> findByTransactionId(UUID transactionId);
 }

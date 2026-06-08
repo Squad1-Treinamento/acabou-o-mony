@@ -29,4 +29,13 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, UUID> 
      * @return List of events with status FAILED
      */
     List<OutboxEvent> findByStatusOrderByCreatedAtAsc(OutboxEventStatus status);
+    
+    /**
+     * Find all outbox events for a specific aggregate (transaction).
+     * 
+     * @param aggregateId The transaction ID
+     * @return List of events for the aggregate
+     */
+    List<OutboxEvent> findByAggregateId(UUID aggregateId);
 }
+

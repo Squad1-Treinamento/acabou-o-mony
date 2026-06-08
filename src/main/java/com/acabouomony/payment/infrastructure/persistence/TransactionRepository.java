@@ -42,6 +42,16 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     Optional<Transaction> findByMerchantIdAndIdempotencyKey(UUID merchantId, UUID idempotencyKey);
     
     /**
+     * Finds all transactions for a specific merchant.
+     * 
+     * Used for testing and merchant-specific queries.
+     * 
+     * @param merchantId The merchant ID
+     * @return List of transactions for the merchant
+     */
+    List<Transaction> findByMerchantId(UUID merchantId);
+    
+    /**
      * Finds UNKNOWN transactions for reconciliation.
      * 
      * Used by reconciliation worker to query transactions needing status resolution.
@@ -87,3 +97,4 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
         @Param("staleThreshold") Instant staleThreshold
     );
 }
+
