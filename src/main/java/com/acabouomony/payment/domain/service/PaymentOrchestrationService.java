@@ -2,6 +2,8 @@ package com.acabouomony.payment.domain.service;
 
 import com.acabouomony.payment.domain.dto.PaymentResult;
 import com.acabouomony.payment.domain.entity.Transaction;
+import com.acabouomony.payment.domain.exception.PaymentAcquirerException;
+import com.acabouomony.payment.domain.exception.PaymentTimeoutException;
 import com.acabouomony.payment.domain.model.PaymentStatus;
 import com.acabouomony.payment.infrastructure.persistence.TransactionRepository;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -26,13 +28,19 @@ import java.time.Instant;
  * 9. Create outbox event for webhook
  * 
  * Spec: spec-001-core-payment-processing.md - Payment Lifecycle Rules
- * Task: task-012-payment-orchestration.md
+ * Task: task-012-payment-orchestration.md, task-013-unknown-state-handling.md
  * 
  * State Transitions:
  * - CREATED -> VALIDATED (validation)
  * - VALIDATED -> CHALLENGE_PENDING (high-risk, 3DS required)
  * - VALIDATED -> PROCESSING (low-risk, skip 3DS)
  * - PROCESSING -> COMPLETED/DECLINED/FAILED/UNKNOWN (payment result)
+ * 
+ * Timeout Handling:
+ * - PaymentTimeoutException caught and delegated to UnknownStateTransitionHandler
+ * - PaymentAcquirerException caught and delegated to UnknownStateTransitionHandler
+ * - Both trigger PROCESSING -> UNKNOWN transition
+ * - Reconciliation scheduled by Phase 4a
  * 
  * Optimistic Locking:
  * - Retry up to 3 times on version conflict
@@ -53,6 +61,7 @@ public class PaymentOrchestrationService {
     private final StateTransitionValidator stateTransitionValidator;
     private final AuditLogService auditLogService;
     private final OutboxEventService outboxEventService;
+    private final UnknownStateTransitionHandler unknownStateTransitionHandler;
     
     public PaymentOrchestrationService(
             TransactionRepository transactionRepository,
@@ -60,13 +69,15 @@ public class PaymentOrchestrationService {
             RiskEvaluationService riskEvaluationService,
             StateTransitionValidator stateTransitionValidator,
             AuditLogService auditLogService,
-            OutboxEventService outboxEventService) {
+            OutboxEventService outboxEventService,
+            UnknownStateTransitionHandler unknownStateTransitionHandler) {
         this.transactionRepository = transactionRepository;
         this.paymentAcquirerClient = paymentAcquirerClient;
         this.riskEvaluationService = riskEvaluationService;
         this.stateTransitionValidator = stateTransitionValidator;
         this.auditLogService = auditLogService;
         this.outboxEventService = outboxEventService;
+        this.unknownStateTransitionHandler = unknownStateTransitionHandler;
     }
     
     /**
@@ -122,6 +133,22 @@ public class PaymentOrchestrationService {
             // Step 4: Handle payment result
             handlePaymentResult(transaction, result);
             
+        } catch (PaymentTimeoutException e) {
+            // Timeout during Mercado Pago call
+            logger.warn("Payment timeout, transitioning to UNKNOWN: transaction_id={}, error={}",
+                transaction.getId(), e.getMessage());
+            
+            // Transition to UNKNOWN state
+            unknownStateTransitionHandler.transitionToUnknownDueToTimeout(transaction, e.getMessage());
+            
+        } catch (PaymentAcquirerException e) {
+            // Acquirer error during payment submission
+            logger.warn("Acquirer error, transitioning to UNKNOWN: transaction_id={}, error={}",
+                transaction.getId(), e.getMessage());
+            
+            // Transition to UNKNOWN state
+            unknownStateTransitionHandler.transitionToUnknownDueToAcquirerError(transaction, e.getMessage());
+            
         } catch (Exception e) {
             logger.error("Error processing payment: transaction_id={}, error={}", transaction.getId(), e.getMessage(), e);
             throw e;
@@ -164,10 +191,10 @@ public class PaymentOrchestrationService {
                 break;
                 
             case UNKNOWN:
-                transitionState(transaction, PaymentStatus.UNKNOWN, "system");
-                outboxEventService.createPaymentUnknownEvent(transaction);
-                // TODO: Schedule reconciliation (Phase 4a)
-                logger.info("Payment outcome unknown, reconciliation scheduled: transaction_id={}", transaction.getId());
+                // This should not happen in normal flow (handled by exception catch)
+                // But if it does, transition to UNKNOWN
+                unknownStateTransitionHandler.transitionToUnknownDueToAcquirerError(transaction, 
+                    "Acquirer returned UNKNOWN status");
                 break;
                 
             default:

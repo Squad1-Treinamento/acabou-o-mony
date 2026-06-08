@@ -28,3 +28,37 @@ logging:
 
 server:
   port: 8080
+
+# Payment processing configuration
+payment:
+  mercado-pago:
+    # Timeout configuration for Mercado Pago API calls
+    # Connect timeout: 500ms (time to establish connection)
+    # Read timeout: 2000ms (time to receive response)
+    # Total timeout: 2500ms
+    connect-timeout-ms: 500
+    read-timeout-ms: 2000
+
+  # Unknown state handling configuration
+  unknown-state:
+    # Delay before reconciliation processing starts (Phase 4a)
+    reconciliation-delay-ms: 1000
+    # Maximum time to wait for reconciliation (5 minutes)
+    reconciliation-timeout-ms: 300000
+    # Maximum reconciliation retry attempts
+    max-retry-attempts: 3
+    # Base backoff for exponential retry (milliseconds)
+    backoff-base-ms: 100
+    # Minutes before UNKNOWN transaction considered stale
+    stale-threshold-minutes: 5
+    # Maximum concurrent reconciliation queries per merchant
+    max-concurrent-per-merchant: 2
+    # Maximum reconciliation queue depth per merchant
+    max-queue-depth-per-merchant: 10
+
+# Mercado Pago API configuration
+mercado-pago:
+  api-url: https://api.mercadopago.com
+  access-token: ${MERCADO_PAGO_ACCESS_TOKEN:}
+  webhook-url: ${MERCADO_PAGO_WEBHOOK_URL:}
+

@@ -2,24 +2,20 @@ package com.acabouomony.payment.infrastructure.client;
 
 import com.acabouomony.payment.domain.dto.PaymentResult;
 import com.acabouomony.payment.domain.entity.Transaction;
+import com.acabouomony.payment.domain.exception.PaymentAcquirerException;
+import com.acabouomony.payment.domain.exception.PaymentTimeoutException;
 import com.acabouomony.payment.domain.model.PaymentStatus;
 import com.acabouomony.payment.domain.service.PaymentAcquirerClient;
 import com.acabouomony.payment.infrastructure.client.dto.MercadoPagoRequest;
 import com.acabouomony.payment.infrastructure.client.dto.MercadoPagoResponse;
 import com.acabouomony.payment.infrastructure.client.exception.MercadoPagoException;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.HttpServerErrorException;
-import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
-import java.util.Objects;
 
 /**
  * Mercado Pago payment acquirer client implementation.
@@ -28,7 +24,7 @@ import java.util.Objects;
  * Implements PaymentAcquirerClient interface.
  * 
  * Spec: spec-001-core-payment-processing.md - Mercado Pago Integration
- * Task: task-011-mercado-pago-client.md
+ * Task: task-011-mercado-pago-client.md, task-013-unknown-state-handling.md
  * 
  * Timeout Configuration:
  * - Connect timeout: 500ms
@@ -40,6 +36,12 @@ import java.util.Objects;
  * - Backoff: 100ms, 200ms, 400ms
  * - Retryable: timeout, 5xx errors
  * - Non-retryable: 4xx errors (validation/auth)
+ * 
+ * Exception Handling:
+ * - SocketTimeoutException -> PaymentTimeoutException (triggers UNKNOWN)
+ * - ConnectException -> PaymentAcquirerException (triggers UNKNOWN)
+ * - HttpServerErrorException (5xx) -> PaymentAcquirerException (triggers UNKNOWN)
+ * - HttpClientErrorException (4xx) -> MercadoPagoException (triggers FAILED)
  */
 @Component
 public class MercadoPagoClient implements PaymentAcquirerClient {
@@ -71,11 +73,13 @@ public class MercadoPagoClient implements PaymentAcquirerClient {
      * Maps transaction to Mercado Pago request format, submits, and returns result.
      * 
      * Timeout behavior:
-     * - If timeout occurs: returns PaymentStatus.UNKNOWN
-     * - Caller is responsible for scheduling reconciliation
+     * - If timeout occurs: throws PaymentTimeoutException
+     * - Caller is responsible for catching and scheduling reconciliation
      * 
      * @param transaction The transaction to process
      * @return PaymentResult with acquirer reference and status
+     * @throws PaymentTimeoutException on timeout
+     * @throws PaymentAcquirerException on acquirer error
      */
     @Override
     public PaymentResult submitPayment(Transaction transaction) {
@@ -100,18 +104,18 @@ public class MercadoPagoClient implements PaymentAcquirerClient {
                 // Map response to PaymentResult
                 return mapResponseToResult(response);
                 
-            } catch (MercadoPagoException e) {
-                if (!e.isRetryable() || attempt == MAX_RETRIES - 1) {
-                    logger.error("Payment submission failed (non-retryable or max retries): transaction_id={}, error={}",
+            } catch (PaymentTimeoutException e) {
+                // Timeout is retryable
+                if (attempt == MAX_RETRIES - 1) {
+                    logger.error("Payment submission timeout (max retries exhausted): transaction_id={}, error={}",
                         transaction.getId(), e.getMessage());
-                    
-                    // Return appropriate status based on error
-                    return handlePaymentError(e);
+                    throw e;  // Propagate to caller
                 }
                 
                 // Retryable error: wait and retry
                 long backoffMs = 100L * (attempt + 1);
-                logger.warn("Payment submission failed (retryable), retrying after {}ms: transaction_id={}, attempt={}/{}",
+                logger.warn("Payment submission timeout (retryable), retrying after {}ms: " +
+                        "transaction_id={}, attempt={}/{}",
                     backoffMs, transaction.getId(), attempt + 1, MAX_RETRIES);
                 
                 try {
@@ -119,22 +123,42 @@ public class MercadoPagoClient implements PaymentAcquirerClient {
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                     logger.error("Interrupted during retry backoff: transaction_id={}", transaction.getId());
-                    return PaymentResult.builder()
-                        .status(PaymentStatus.UNKNOWN)
-                        .message("Payment submission interrupted")
-                        .timestamp(Instant.now())
-                        .build();
+                    throw new PaymentTimeoutException("Payment submission interrupted", ie);
                 }
+                
+            } catch (PaymentAcquirerException e) {
+                // Acquirer error is retryable
+                if (attempt == MAX_RETRIES - 1) {
+                    logger.error("Payment submission acquirer error (max retries exhausted): transaction_id={}, error={}",
+                        transaction.getId(), e.getMessage());
+                    throw e;  // Propagate to caller
+                }
+                
+                // Retryable error: wait and retry
+                long backoffMs = 100L * (attempt + 1);
+                logger.warn("Payment submission acquirer error (retryable), retrying after {}ms: " +
+                        "transaction_id={}, attempt={}/{}",
+                    backoffMs, transaction.getId(), attempt + 1, MAX_RETRIES);
+                
+                try {
+                    Thread.sleep(backoffMs);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    logger.error("Interrupted during retry backoff: transaction_id={}", transaction.getId());
+                    throw new PaymentAcquirerException("Payment submission interrupted", ie);
+                }
+                
+            } catch (MercadoPagoException e) {
+                // Non-retryable error (4xx)
+                logger.error("Payment submission failed (non-retryable): transaction_id={}, error={}",
+                    transaction.getId(), e.getMessage());
+                throw e;  // Propagate to caller
             }
         }
         
         // Should not reach here
         logger.error("Payment submission exhausted all retries: transaction_id={}", transaction.getId());
-        return PaymentResult.builder()
-            .status(PaymentStatus.UNKNOWN)
-            .message("Payment submission exhausted all retries")
-            .timestamp(Instant.now())
-            .build();
+        throw new PaymentAcquirerException("Payment submission exhausted all retries");
     }
     
     /**
@@ -170,33 +194,32 @@ public class MercadoPagoClient implements PaymentAcquirerClient {
     /**
      * Submits payment request to Mercado Pago with timeout handling.
      * 
+     * Throws PaymentTimeoutException on timeout.
+     * Throws PaymentAcquirerException on network/server error.
+     * Throws MercadoPagoException on client error (4xx).
+     * 
      * @param request Mercado Pago request
      * @return Mercado Pago response
-     * @throws MercadoPagoException on error
+     * @throws PaymentTimeoutException on timeout
+     * @throws PaymentAcquirerException on acquirer error
+     * @throws MercadoPagoException on client error
      */
     private MercadoPagoResponse submitPaymentWithRetry(MercadoPagoRequest request) {
-        try {
-            String url = apiUrl + "/v1/payments";
-            
-            // TODO: Implement actual HTTP POST request with authorization and timeout
-            // For now, throw exception to indicate not implemented
-            throw new MercadoPagoException(0, "NOT_IMPLEMENTED", "Mercado Pago client not yet implemented", false);
-            
-        } catch (ResourceAccessException e) {
-            // Timeout or connection error
-            logger.warn("Timeout or connection error submitting payment: {}", e.getMessage());
-            throw new MercadoPagoException("Payment submission timeout or connection error", e);
-            
-        } catch (HttpServerErrorException e) {
-            // 5xx error (retryable)
-            logger.warn("Server error from Mercado Pago: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
-            throw new MercadoPagoException(e.getStatusCode().value(), "SERVER_ERROR", e.getMessage(), true);
-            
-        } catch (HttpClientErrorException e) {
-            // 4xx error (non-retryable)
-            logger.warn("Client error from Mercado Pago: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
-            throw new MercadoPagoException(e.getStatusCode().value(), "CLIENT_ERROR", e.getMessage(), false);
-        }
+        // TODO: Implement actual HTTP POST request with authorization and timeout
+        // When implemented, this method should:
+        // 1. Make HTTP POST to apiUrl + "/v1/payments"
+        // 2. Set connect timeout: CONNECT_TIMEOUT_MS (500ms)
+        // 3. Set read timeout: READ_TIMEOUT_MS (2000ms)
+        // 4. Include Authorization header with accessToken
+        // 5. Catch and convert exceptions:
+        //    - SocketTimeoutException -> PaymentTimeoutException
+        //    - ConnectException -> PaymentAcquirerException
+        //    - ResourceAccessException -> PaymentTimeoutException or PaymentAcquirerException
+        //    - HttpServerErrorException (5xx) -> PaymentAcquirerException
+        //    - HttpClientErrorException (4xx) -> MercadoPagoException
+        
+        // For now, throw exception to indicate not implemented
+        throw new MercadoPagoException(0, "NOT_IMPLEMENTED", "Mercado Pago client not yet implemented", false);
     }
     
     /**
@@ -258,52 +281,5 @@ public class MercadoPagoClient implements PaymentAcquirerClient {
             case "refunded" -> PaymentStatus.DECLINED;
             default -> PaymentStatus.UNKNOWN;
         };
-    }
-    
-    /**
-     * Handles payment error and returns appropriate PaymentResult.
-     * 
-     * @param exception The exception
-     * @return PaymentResult with appropriate status
-     */
-    private PaymentResult handlePaymentError(MercadoPagoException exception) {
-        int httpStatus = exception.getHttpStatus();
-        
-        // Timeout or network error
-        if (httpStatus == 0) {
-            logger.warn("Timeout or network error: {}", exception.getMessage());
-            return PaymentResult.builder()
-                .status(PaymentStatus.UNKNOWN)
-                .message("Payment submission timeout")
-                .timestamp(Instant.now())
-                .build();
-        }
-        
-        // 4xx errors (validation, auth, etc.)
-        if (httpStatus >= 400 && httpStatus < 500) {
-            logger.warn("Client error from Mercado Pago: status={}, code={}", httpStatus, exception.getErrorCode());
-            return PaymentResult.builder()
-                .status(PaymentStatus.FAILED)
-                .message(exception.getMessage())
-                .timestamp(Instant.now())
-                .build();
-        }
-        
-        // 5xx errors (server error)
-        if (httpStatus >= 500) {
-            logger.warn("Server error from Mercado Pago: status={}, code={}", httpStatus, exception.getErrorCode());
-            return PaymentResult.builder()
-                .status(PaymentStatus.UNKNOWN)
-                .message("Mercado Pago server error")
-                .timestamp(Instant.now())
-                .build();
-        }
-        
-        // Unknown error
-        return PaymentResult.builder()
-            .status(PaymentStatus.UNKNOWN)
-            .message(exception.getMessage())
-            .timestamp(Instant.now())
-            .build();
     }
 }
