@@ -9,3 +9,4 @@ qa-output/**
 debug-output/
 .playwright-cli/
 .env
+*/__pycache__/
