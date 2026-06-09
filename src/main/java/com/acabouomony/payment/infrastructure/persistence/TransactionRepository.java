@@ -80,14 +80,14 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     /**
      * Finds stale UNKNOWN transactions.
      * 
-     * Used by stale transaction monitor to detect -001-core-payment-processing.md - Reconciliation Behavior & Termination
-     * Tasexpected reconciliation UNKNOWN transactions
+     * Used by stale transaction monitor to detect UNKNOWN transactions
      * that have exceeded the window (5 minutes).
      * 
-     * Spec: spece-handling.md
+     * Spec: spec-001-core-payment-processing.md - Reconciliation Behavior & Termination
+     * Task: task-013-unknown-state-handling.md
      * 
      * @param status The payment status (UNKNOWN)
-     * k: task-013-unknown-stat@param staleThreshold Timestamp threshold (e.g., 5 minutes ago)
+     * @param staleThreshold Timestamp threshold (e.g., 5 minutes ago)
      * @return List of stale UNKNOWN transactions
      */
     @Query("SELECT t FROM Transaction t WHERE t.status = :status " +
@@ -95,6 +95,44 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     List<Transaction> findStaleUnknownTransactions(
         @Param("status") PaymentStatus status,
         @Param("staleThreshold") Instant staleThreshold
+    );
+    
+    /**
+     * Counts completed transacand merctions for a specific card hant.
+     * 
+     * Used by risk evaluation to check if card has transaction history.
+     * 
+     * Spec: spec-001-core-payment-processing.md - Risk Evaluation Rules
+     * Task: task-018-risk-evaluation.md
+     * 
+     * @param cardTokenId The card token ID
+     * @param merchantId The merchant ID
+     * @return Number of completed transactions for this card
+     */
+    @Query("SELECT COUNT(t) FROM Transaction t WHERE t.cardTokenId = :cardTokenId " +
+           "AND t.merchantId = :merchantId AND t.status = 'COMPLETED'")
+    long countByCardTokenIdAndMerchantIdAndStatusCompleted(
+        @Param("cardTokenId") String cardTokenId,
+        @Param("merchantId") UUID merchantId
+    );
+    
+    /**
+     * Counts transactions for a merchant created after a specific time.
+     * 
+     * Used by risk evaluation for velocity checks.
+     * 
+     * Spec: spec-001-core-payment-processing.md - Risk Evaluation Rules
+     * Task: task-018-risk-evaluation.md
+     * 
+     * @param merchantId The merchant ID
+     * @param createdAfter Timestamp threshold
+     * @return Number of transactions created after threshold
+     */
+    @Query("SELECT COUNT(t) FROM Transaction t WHERE t.merchantId = :merchantId " +
+           "AND t.createdAt > :createdAfter")
+    long countByMerchantIdAndCreatedAtAfter(
+        @Param("merchantId") UUID merchantId,
+        @Param("createdAfter") Instant createdAfter
     );
 }
 
