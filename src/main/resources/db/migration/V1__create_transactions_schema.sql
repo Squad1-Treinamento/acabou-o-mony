@@ -14,20 +14,20 @@ CREATE TABLE transactions (
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
     UNIQUE(merchant_id, idempotency_key),
-    CHECK (status IN ('CREATED', 'VALIDATED', 'CHALLENGE_PENDING', 'AUTHENTICATED', 'PROCESSING', 'UNKNOWN', 'COMPLETED', 'DECLINED', 'FAILED')),
-    INDEX idx_merchant_id (merchant_id),
-    INDEX idx_status (status),
-    INDEX idx_created_at (created_at),
-    INDEX idx_merchant_id_created_at (merchant_id, created_at)
+    CHECK (status IN ('CREATED', 'VALIDATED', 'CHALLENGE_PENDING', 'AUTHENTICATED', 'PROCESSING', 'UNKNOWN', 'COMPLETED', 'DECLINED', 'FAILED'))
 );
+
+-- Indexes for transactions table
+CREATE INDEX idx_merchant_id ON transactions(merchant_id);
+CREATE INDEX idx_status ON transactions(status);
+CREATE INDEX idx_created_at ON transactions(created_at);
+CREATE INDEX idx_merchant_id_created_at ON transactions(merchant_id, created_at);
 
 -- Function for audit_logs immutability (must be created before trigger)
 CREATE OR REPLACE FUNCTION raise_immutable_error()
-RETURNS TRIGGER AS $$
-BEGIN
+RETURNS TRIGGER AS $$BEGIN
     RAISE EXCEPTION 'audit_logs table is immutable; UPDATE operations are not allowed';
-END;
-$$ LANGUAGE plpgsql;
+END;$$ LANGUAGE plpgsql;
 
 CREATE TABLE audit_logs (
     id UUID PRIMARY KEY,
@@ -38,10 +38,12 @@ CREATE TABLE audit_logs (
     checksum VARCHAR(64) NOT NULL,
     created_at TIMESTAMP NOT NULL,
     CHECK (new_status IN ('CREATED', 'VALIDATED', 'CHALLENGE_PENDING', 'AUTHENTICATED', 'PROCESSING', 'UNKNOWN', 'COMPLETED', 'DECLINED', 'FAILED')),
-    CHECK (old_status IS NULL OR old_status IN ('CREATED', 'VALIDATED', 'CHALLENGE_PENDING', 'AUTHENTICATED', 'PROCESSING', 'UNKNOWN', 'COMPLETED', 'DECLINED', 'FAILED')),
-    INDEX idx_transaction_id (transaction_id),
-    INDEX idx_created_at (created_at)
+    CHECK (old_status IS NULL OR old_status IN ('CREATED', 'VALIDATED', 'CHALLENGE_PENDING', 'AUTHENTICATED', 'PROCESSING', 'UNKNOWN', 'COMPLETED', 'DECLINED', 'FAILED'))
 );
+
+-- Indexes for audit_logs table
+CREATE INDEX idx_transaction_id ON audit_logs(transaction_id);
+CREATE INDEX idx_audit_created_at ON audit_logs(created_at); -- Renamed to avoid conflict with transactions index name
 
 -- Trigger to prevent UPDATE on audit_logs (INSERT-ONLY table)
 CREATE TRIGGER audit_logs_immutable BEFORE UPDATE ON audit_logs
@@ -58,7 +60,10 @@ CREATE TABLE outbox_events (
     updated_at TIMESTAMP NOT NULL,
     delivered_at TIMESTAMP NULL,
     CHECK (status IN ('PENDING', 'DELIVERED', 'FAILED')),
-    CHECK (retry_count >= 0 AND retry_count <= 5),
-    INDEX idx_status (status),
-    INDEX idx_created_at (created_at)
+    CHECK (retry_count >= 0 AND retry_count <= 5)
 );
+
+-- Indexes for outbox_events table
+CREATE INDEX idx_outbox_status ON outbox_events(status); -- Renamed to avoid conflict
+CREATE INDEX idx_outbox_created_at ON outbox_events(created_at); -- Renamed to avoid conflict
+
