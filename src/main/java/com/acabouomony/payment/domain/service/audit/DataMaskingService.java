@@ -18,15 +18,12 @@ import org.springframework.stereotype.Service;
  * - API keys: Mask all but first 4 characters
  * - Customer names: Mask all but first and last character
  * - Email addresses: Mask domain part
-
  * - Phone numbers: Show only last 4 digits
  * - CPF/CNPJ: Show only last 4 digits
  */
 @Service
 public class DataMaskingService {
     
-
-
     private static final Logger logger = LoggerFactory.getLogger(DataMaskingService.class);
     
     /**

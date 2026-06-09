@@ -18,9 +18,9 @@ import java.util.UUID;
  * Service for structured audit logging with masking and tamper detection.
  * 
  * Provides comprehensive audit logging for all sensitive or security-relevant actions.
- * Includes data masking to prevesums for tamper detection.
+ * Includes data masking to prevent PII exposure and checksums for tamper detection.
  * 
- * Spec: spent PII exposure and checkc-001-core-payment-processing.md - Audit Log Persistence
+ * Spec: spec-001-core-payment-processing.md - Audit Log Persistence
  * Task: task-019-structured-audit-logging.md
  * 
  * Features:

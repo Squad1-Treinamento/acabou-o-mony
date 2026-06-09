@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -34,6 +35,7 @@ import java.util.UUID;
  * - timestamp: When the event occurred
  */
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
