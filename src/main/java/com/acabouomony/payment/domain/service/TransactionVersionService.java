@@ -88,17 +88,14 @@ public class TransactionVersionService {
         Transaction transaction = transactionRepository.findById(transactionId)
             .orElseThrow(() -> new IllegalArgumentException("Transaction not found: " + transactionId));
         
-        PaymentStatus currentStatus = PaymentStatus.valueOf(transaction.getStatus());
+        PaymentStatus currentStatus = transaction.getStatus();
+        Integer currentVersion = transaction.getVersion();
         
         // Validate transition
         paymentStateMachine.validateTransition(currentStatus, newStatus);
         
-        // Increment version
-        Integer currentVersion = transaction.getVersion();
-        transaction.setVersion(currentVersion + 1);
-        
-        // Update status and timestamp
-        transaction.setStatus(newStatus.toString());
+        // Update status and timestamp (JPA will auto-increment version)
+        transaction.setStatus(newStatus);
         transaction.setUpdatedAt(Instant.now());
         
         // Persist transaction with version check (optimistic locking)
@@ -106,7 +103,7 @@ public class TransactionVersionService {
         transactionRepository.save(transaction);
         
         // Create audit log in same transaction (atomicity guaranteed)
-        createAuditLog(transaction, currentStatus.toString(), newStatus.toString(), actor);
+        createAuditLog(transaction, currentStatus, newStatus, actor);
         
         log.info("Transaction {} transitioned from {} to {} (version {} -> {})", 
             transactionId, currentStatus, newStatus, currentVersion, currentVersion + 1);
@@ -125,8 +122,8 @@ public class TransactionVersionService {
      * @param newStatus New status
      * @param actor Who performed the transition
      */
-    private void createAuditLog(Transaction transaction, String oldStatus, String newStatus, String actor) {
-        String checksum = computeChecksum(transaction.getId().toString(), oldStatus, newStatus, actor);
+    private void createAuditLog(Transaction transaction, PaymentStatus oldStatus, PaymentStatus newStatus, String actor) {
+        String checksum = computeChecksum(transaction.getId().toString(), oldStatus.toString(), newStatus.toString(), actor);
         
         AuditLog auditLog = AuditLog.builder()
             .id(UUID.randomUUID())

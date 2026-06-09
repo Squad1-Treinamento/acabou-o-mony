@@ -1,7 +1,6 @@
 package com.acabouomony.payment.infrastructure.persistence;
 
 import com.acabouomony.payment.domain.exception.OptimisticLockException;
-import jakarta.persistence.OptimisticLockException as JpaOptimisticLock;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import java.util.UUID;
@@ -12,6 +11,8 @@ import java.util.function.Supplier;
  * 
  * Provides retry capabilities with exponential backoff when optimistic
  * lock conflicts occur. Max 3 attempts with delays: immediate, 100ms, 200ms.
+ *
+ * **IMPORTANT:** Do NOT manually increment version field - JPA/Hibernate handles this automatically
  */
 public class OptimisticLockRetryHandler {
     
@@ -66,7 +67,7 @@ public class OptimisticLockRetryHandler {
                 
                 return operation.get();
                 
-            } catch (ObjectOptimisticLockingFailureException | JpaOptimisticLock e) {
+            } catch (ObjectOptimisticLockingFailureException | jakarta.persistence.OptimisticLockException e) {
                 // Optimistic lock conflict detected
                 if (attempt >= maxAttempts) {
                     // All retries exhausted
@@ -88,8 +89,9 @@ public class OptimisticLockRetryHandler {
      */
     public static boolean isOptimisticLockConflict(Exception e) {
         return e instanceof ObjectOptimisticLockingFailureException ||
-               e instanceof JpaOptimisticLock ||
+               e instanceof jakarta.persistence.OptimisticLockException ||
                (e.getCause() instanceof ObjectOptimisticLockingFailureException) ||
-               (e.getCause() instanceof JpaOptimisticLock);
+               (e.getCause() instanceof jakarta.persistence.OptimisticLockException);
     }
 }
+

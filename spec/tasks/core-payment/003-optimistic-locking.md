@@ -41,12 +41,12 @@ Create version-based conflict detection and retry logic for concurrent state tra
    - Logic:
      - Load transaction by ID
      - Validate state transition (PaymentStateMachine)
-     - Increment version: `transaction.setVersion(transaction.getVersion() + 1)`
-     - Set new status: `transaction.setStatus(newStatus)`
-     - Call repository.save(transaction)
+     - Set new status: `transaction.setStatus(newStatus)` (use enum directly, not string)
+     - Call repository.save(transaction) - JPA auto-increments version via @Version annotation
      - On OptimisticLockException: retry with backoff (max 3 attempts)
      - After 3 failures: throw exception, log to monitoring, do NOT retry further
    - Atomically update transaction + audit log in same DB transaction
+   - **IMPORTANT:** Do NOT manually increment version field - JPA/Hibernate handles this automatically
 
 3. **Create OptimisticLockException (custom):**
    - Extends RuntimeException
@@ -93,6 +93,7 @@ mvn test -Dtest="*OptimisticLock*,*VersionManagement*"
 - Do NOT use application-level locking (pessimistic) - use optimistic only
 - Do NOT auto-retry indefinitely (max 3 attempts enforced)
 - Do NOT silently ignore OptimisticLockException (must log and expose to monitoring)
-- Do NOT update version field outside of state transitions
+- Do NOT manually increment version field - JPA @Version annotation handles this automatically
 - Do NOT add retry logic at HTTP controller layer (only at service layer)
-- Version field MUST be EVERY state transition, not selective
+- Do NOT convert PaymentStatus enum to/from String when setting transaction.status or audit log fields
+- Version field MUST be incremented on EVERY state transition, not selective (JPA enforces this)
