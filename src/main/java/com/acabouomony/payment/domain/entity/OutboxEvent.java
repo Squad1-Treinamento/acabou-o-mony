@@ -7,6 +7,28 @@ import lombok.*;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Outbox event entity for transactional webhook delivery.
+ * 
+ * Outbox events are persisted atomically with transaction state changes.
+ * Webhook worker polls for PENDING events and dispatches asynchronously.
+ * 
+ * Spec: spec-001-core-payment-processing.md - Transactional Outbox Rules
+ * Task: task-016-outbox-persistence.md
+ * 
+ * Lifecycle:
+ * 1. Event created with status PENDING (same transaction as payment update)
+ * 2. Webhook worker polls for PENDING events
+ * 3. Worker dispatches to merchant webhook endpoint
+ * 4. On success (200 OK): mark as DELIVERED
+ * 5. On failure: retry with exponential backoff (max 5 retries)
+ * 6. After 5 retries: mark as FAILED and alert operator
+ * 
+ * Independent Versioning:
+ * - Outbox events have INDEPENDENT version field
+ * - NOT versioned with parent transaction
+ * - Allows safe replay and concurrent updates
+ */
 @Entity
 @Table(
     name = "outbox_events",
@@ -43,10 +65,6 @@ public class OutboxEvent {
     @Max(value = 5, message = "retryCount must be <= 5")
     @Column(name = "retry_count", nullable = false)
     private Integer retryCount;
-
-    @NotNull(message = "signature cannot be null")
-    @Column(nullable = false, length = 256)
-    private String signature;
 
     @NotNull(message = "created_at cannot be null")
     @Column(name = "created_at", nullable = false)

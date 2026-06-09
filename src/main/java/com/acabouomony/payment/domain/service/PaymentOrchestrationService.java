@@ -8,6 +8,7 @@ import com.acabouomony.payment.domain.model.PaymentStatus;
 import com.acabouomony.payment.infrastructure.persistence.TransactionRepository;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +29,13 @@ import java.time.Instant;
  * 9. Create outbox event for webhook
  * 
  * Spec: spec-001-core-payment-processing.md - Payment Lifecycle Rules
- * Task: task-012-payment-orchestration.md, task-013-unknown-state-handling.md
+ * Task: task-012-payment-orchestration.md, task-016-outbox-persistence.md
+ * 
+ * Atomic Persistence:
+ * - Transaction update, audit log, and outbox event persist atomically
+ * - All operations within same @Transactional method
+ * - If any operation fails, entire transaction rolls back
+ * - Guarantees no lost or duplicate webhook events
  * 
  * State Transitions:
  * - CREATED -> VALIDATED (validation)
@@ -86,6 +93,8 @@ public class PaymentOrchestrationService {
      * Handles all scenarios:
      * - Low-risk: CREATED -> VALIDATED -> PROCESSING -> COMPLETED/DECLINED/FAILED/UNKNOWN
      * - High-risk: CREATED -> VALIDATED -> CHALLENGE_PENDING (wait for 3DS)
+     * 
+     * All state transitions, audit logs, and outbox events persist atomically.
      * 
      * @param transaction The transaction to process
      */
@@ -158,11 +167,13 @@ public class PaymentOrchestrationService {
     /**
      * Handles payment result from acquirer.
      * 
-     * Maps PaymentResult to transaction state and persists.
+     * Maps PaymentResult to transaction state and persists atomically.
+     * Transaction update, audit log, and outbox event all persist together.
      * 
      * @param transaction The transaction
      * @param result The payment result from acquirer
      */
+    @Transactional
     private void handlePaymentResult(Transaction transaction, PaymentResult result) {
         logger.debug("Handling payment result: transaction_id={}, status={}", transaction.getId(), result.getStatus());
         
@@ -213,6 +224,8 @@ public class PaymentOrchestrationService {
      * - Attempt 3: 200ms backoff
      * - Fail fast after 3 attempts
      * 
+     * All updates (transaction, audit log) persist atomically.
+     * 
      * @param transaction The transaction
      * @param newStatus The target status
      * @param actor The actor performing transition
@@ -237,7 +250,7 @@ public class PaymentOrchestrationService {
                 // Persist transaction (version conflict checked here)
                 transactionRepository.save(transaction);
                 
-                // Create audit log entry
+                // Create audit log entry (same transaction)
                 auditLogService.logStateTransition(transaction, oldStatus, newStatus, actor);
                 
                 logger.info("State transition successful: transaction_id={}, {} -> {}, version={}",

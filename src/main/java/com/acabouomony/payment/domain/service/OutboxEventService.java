@@ -6,6 +6,7 @@ import com.acabouomony.payment.domain.model.OutboxEventStatus;
 import com.acabouomony.payment.infrastructure.persistence.OutboxEventRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +22,13 @@ import java.util.UUID;
  * Webhook worker polls outbox table and dispatches events asynchronously.
  * 
  * Spec: spec-001-core-payment-processing.md - Transactional Outbox Rules
- * Task: task-012-payment-orchestration.md
+ * Task: task-016-outbox-persistence.md
+ * 
+ * Atomic Persistence:
+ * - Outbox event created within same @Transactional method as transaction update
+ * - If transaction update fails, outbox event creation rolls back
+ * - If outbox event creation fails, transaction update rolls back
+ * - All-or-nothing consistency guarantee
  * 
  * Outbox Event Lifecycle:
  * 1. Event created with status PENDING
@@ -47,6 +54,8 @@ public class OutboxEventService {
     /**
      * Creates outbox event for completed payment.
      * 
+     * Called within same transaction as payment state update.
+     * 
      * @param transaction The completed transaction
      */
     public void createPaymentCompletedEvent(Transaction transaction) {
@@ -60,6 +69,8 @@ public class OutboxEventService {
     
     /**
      * Creates outbox event for declined payment.
+     * 
+     * Called within same transaction as payment state update.
      * 
      * @param transaction The declined transaction
      */
@@ -75,6 +86,8 @@ public class OutboxEventService {
     /**
      * Creates outbox event for failed payment.
      * 
+     * Called within same transaction as payment state update.
+     * 
      * @param transaction The failed transaction
      */
     public void createPaymentFailedEvent(Transaction transaction) {
@@ -88,6 +101,8 @@ public class OutboxEventService {
     
     /**
      * Creates outbox event for unknown payment (timeout).
+     * 
+     * Called within same transaction as payment state update.
      * 
      * @param transaction The unknown transaction
      */
@@ -104,6 +119,8 @@ public class OutboxEventService {
     /**
      * Creates outbox event for reconciliation completion.
      * 
+     * Called within same transaction as payment state update.
+     * 
      * @param transaction The reconciled transaction
      */
     public void createPaymentReconciledEvent(Transaction transaction) {
@@ -118,6 +135,10 @@ public class OutboxEventService {
     
     /**
      * Creates generic outbox event.
+     * 
+     * Persists event to database within current transaction.
+     * If this method is called within a @Transactional context,
+     * the event persists atomically with the parent transaction.
      * 
      * @param eventType The event type
      * @param aggregateId The transaction ID
@@ -134,13 +155,13 @@ public class OutboxEventService {
                 .eventType(eventType)
                 .aggregateId(aggregateId)
                 .payload(payloadJson)
-                .status(OutboxEventStatus.valueOf("PENDING"))
+                .status(OutboxEventStatus.PENDING)
                 .retryCount(0)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
             
-            // Persist to database
+            // Persist to database (within current transaction)
             outboxEventRepository.save(event);
             
             logger.info("Outbox event created: event_type={}, transaction_id={}, event_id={}",
