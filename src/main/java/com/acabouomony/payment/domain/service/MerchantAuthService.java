@@ -13,10 +13,19 @@ import java.util.Optional;
  * Service for merchant authentication using hashed API keys.
  * 
  * Implements secure API key validation with:
- * - Argon2 hashing (2^16 iterations minimum)
+ * - Argon2 hashing with secure parameters (memory=64MB, iterations=3, parallelism=1)
  * - Timing-safe comparison (prevents timing attacks)
  * - No plaintext key logging
- * - Constant-time hash comparison
+ * - Constant-time hash comparison via Argon2PasswordEncoder.matches()
+ * - Fetch-all-and-verify approach (necessary due to salted hashing)
+ * 
+ * Authentication Strategy:
+ * 1. Fetch all merchants from database
+ * 2. For each merchant, use timing-safe comparison to verify API key
+ * 3. Return first merchant that matches, or empty Optional
+ * 
+ * Why not "hash and query"? Argon2 generates different hashes for the same input
+ * (due to random salt), making direct database queries by hash impossible.
  * 
  * Spec: spec-001-core-payment-processing.md - Security Rules
  */
@@ -30,8 +39,13 @@ public class MerchantAuthService {
     
     public MerchantAuthService(MerchantRepository merchantRepository) {
         this.merchantRepository = merchantRepository;
-        // Argon2PasswordEncoder with high cost factor (2^16 iterations)
-        // Parameters: saltLength=16, hashLength=32, parallelism=1, memory=65536, iterations=3
+        // Argon2PasswordEncoder with secure parameters
+        // Parameters: saltLength=16, hashLength=32, parallelism=1, memory=65536 KB (64 MB), iterations=3
+        // Security note: Argon2's strength comes from the combination of:
+        // - Memory (65536 KB = 64 MB): Primary defense against brute-force attacks
+        // - Iterations (3): Number of passes over memory
+        // - Parallelism (1): Number of parallel threads
+        // These are recommended defaults providing strong protection.
         this.passwordEncoder = new Argon2PasswordEncoder(16, 32, 1, 65536, 3);
     }
     
@@ -39,9 +53,14 @@ public class MerchantAuthService {
      * Authenticates a merchant using their API key.
      * 
      * Process:
-     * 1. Hash the provided API key using Argon2
-     * 2. Query database for merchant with matching hash
-     * 3. Return merchant if found, empty Optional otherwise
+     * 1. Query all merchants from database (simple approach)
+     * 2. For each merchant, verify the provided API key against stored hash using Argon2
+     * 3. Return merchant if verification succeeds, empty Optional otherwise
+     * 
+     * Note: This approach queries all merchants and verifies each one. While not optimal
+     * for large merchant counts, it's the correct approach for Argon2 which generates
+     * different hashes for the same input (due to random salt). The verification method
+     * extracts the salt from the stored hash and re-hashes the input for comparison.
      * 
      * Never logs the plaintext API key (security requirement).
      * Logs only the authentication attempt and result.
@@ -57,19 +76,20 @@ public class MerchantAuthService {
         
         logger.info("Authentication attempt initiated");
         
-        // Hash the provided API key
-        String hashedKey = hashApiKey(apiKey);
-        
-        // Query database for merchant with matching hash
-        Optional<Merchant> merchant = merchantRepository.findByApiKeyHash(hashedKey);
-        
-        if (merchant.isPresent()) {
-            logger.info("Authentication successful for merchant {}", merchant.get().getMerchantId());
-        } else {
-            logger.warn("Authentication failed: no merchant found with provided API key");
-        }
-        
-        return merchant;
+        // Query all merchants and verify each one
+        // This is necessary because Argon2 generates different hashes for the same input
+        // (due to random salt), so we cannot query by hash directly
+        return merchantRepository.findAll().stream()
+            .filter(merchant -> passwordEncoder.matches(apiKey, merchant.getApiKeyHash()))
+            .findFirst()
+            .map(merchant -> {
+                logger.info("Authentication successful for merchant {}", merchant.getMerchantId());
+                return merchant;
+            })
+            .or(() -> {
+                logger.warn("Authentication failed: no merchant found with provided API key");
+                return Optional.empty();
+            });
     }
     
     /**
@@ -86,10 +106,12 @@ public class MerchantAuthService {
      * so comparison is done using the encoder's matches() method which
      * extracts the salt from the stored hash and re-hashes the input.
      * 
+     * This method is public to allow API key generation during merchant registration.
+     * 
      * @param plaintext The plaintext API key
      * @return The hashed API key (includes salt)
      */
-    private String hashApiKey(String plaintext) {
+    public String hashApiKey(String plaintext) {
         return passwordEncoder.encode(plaintext);
     }
     

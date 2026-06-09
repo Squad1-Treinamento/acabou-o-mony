@@ -11,11 +11,21 @@ import java.util.UUID;
  * Spring Data JPA repository for Merchant entities.
  * 
  * Provides persistence operations for merchant records.
- * Intentionally does NOT provide a method to find by plaintext API key
- * as this would be a security vulnerability.
  * 
- * API keys are hashed with Argon2, and authentication is performed
- * by hashing the provided key and comparing hashes.
+ * IMPORTANT: Intentionally does NOT provide a findByApiKeyHash() method.
+ * 
+ * Why? Argon2 (and other salted hashing algorithms) generate different hashes
+ * for the same input every time due to random salt. This makes direct database
+ * queries by hash impossible.
+ * 
+ * Authentication Strategy:
+ * 1. Use findAll() to get all merchants
+ * 2. Iterate through merchants and use Argon2PasswordEncoder.matches() for each
+ * 3. matches() extracts the salt from stored hash and re-hashes the input
+ * 4. Return first merchant that matches
+ * 
+ * This is the correct and secure approach for salted hashing.
+ * See MerchantAuthService.authenticate() for implementation.
  */
 @Repository
 public interface MerchantRepository extends JpaRepository<Merchant, UUID> {
@@ -27,15 +37,4 @@ public interface MerchantRepository extends JpaRepository<Merchant, UUID> {
      * @return Optional containing the merchant if found
      */
     Optional<Merchant> findByMerchantId(UUID merchantId);
-    
-    /**
-     * Finds a merchant by their API key hash.
-     * 
-     * This is used internally during authentication after hashing
-     * the provided API key. We compare hashes, never plaintext keys.
-     * 
-     * @param apiKeyHash The hashed API key
-     * @return Optional containing the merchant if found
-     */
-    Optional<Merchant> findByApiKeyHash(String apiKeyHash);
 }

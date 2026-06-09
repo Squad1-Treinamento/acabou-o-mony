@@ -19,9 +19,18 @@ import java.util.Optional;
 /**
  * Spring Security filter for API key authentication.
  * 
- * Extracts API key from Authorization header and validates it.
+ * Extracts API key from Authorization header and validates it using MerchantAuthService.
  * 
  * Header format: Authorization: Bearer {api_key}
+ * 
+ * Authentication Process:
+ * 1. Extract Authorization header
+ * 2. Verify it starts with "Bearer " prefix
+ * 3. Extract API key from header
+ * 4. Call MerchantAuthService.authenticate(apiKey)
+ * 5. Service fetches all merchants and verifies key against each one
+ * 6. If match found, set SecurityContext with authenticated Merchant
+ * 7. If no match, return 401 Unauthorized
  * 
  * On success:
  * - Sets SecurityContext with authenticated Merchant
@@ -30,6 +39,11 @@ import java.util.Optional;
  * On failure:
  * - Returns 401 Unauthorized
  * - Request does not proceed
+ * 
+ * Security Notes:
+ * - Uses timing-safe comparison (Argon2PasswordEncoder.matches())
+ * - Never logs plaintext API keys
+ * - Validates each request (no caching)
  * 
  * Spec: spec-001-core-payment-processing.md - Security Rules
  */

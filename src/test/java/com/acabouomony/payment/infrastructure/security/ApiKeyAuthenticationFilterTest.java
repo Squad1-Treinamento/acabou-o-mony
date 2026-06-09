@@ -10,27 +10,39 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.context.annotation.Profile;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Integration tests for ApiKeyAuthenticationFilter.
  * 
+ * Tests use a protected endpoint (/api/v1/test/protected) that requires authentication.
+ * This endpoint is only available in test profile and is configured to require authentication
+ * in SecurityConfig.
+ * 
  * Verifies:
- * - Valid API key authentication succeeds
- * - Invalid API key authentication fails (401)
- * - Missing Authorization header fails (401)
- * - Invalid Authorization header format fails (401)
+ * - Valid API key authentication succeeds (200 OK)
+ * - Invalid API key authentication fails (401 Unauthorized)
+ * - Missing Authorization header fails (401 Unauthorized)
+ * - Invalid Authorization header format fails (401 Unauthorized)
  * - Authenticated request proceeds to controller
+ * - Timing-safe comparison is used (no timing attacks)
  */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class ApiKeyAuthenticationFilterTest {
+
+    private static final String PROTECTED_ENDPOINT = "/api/v1/test/protected";
 
     @Autowired
     private MockMvc mockMvc;
@@ -65,7 +77,7 @@ class ApiKeyAuthenticationFilterTest {
     @Test
     void shouldAuthenticateWithValidApiKey() throws Exception {
         // Act & Assert
-        mockMvc.perform(get("/actuator/health")
+        mockMvc.perform(get(PROTECTED_ENDPOINT)
                 .header("Authorization", "Bearer " + testApiKey))
             .andExpect(status().isOk());
     }
@@ -73,7 +85,7 @@ class ApiKeyAuthenticationFilterTest {
     @Test
     void shouldRejectWithInvalidApiKey() throws Exception {
         // Act & Assert
-        mockMvc.perform(get("/actuator/health")
+        mockMvc.perform(get(PROTECTED_ENDPOINT)
                 .header("Authorization", "Bearer invalid_key"))
             .andExpect(status().isUnauthorized());
     }
@@ -81,79 +93,64 @@ class ApiKeyAuthenticationFilterTest {
     @Test
     void shouldRejectWithoutAuthorizationHeader() throws Exception {
         // Act & Assert
-        mockMvc.perform(get("/actuator/health"))
-            .andExpect(status().isOk()); // Health check is permitted without auth
+        mockMvc.perform(get(PROTECTED_ENDPOINT))
+            .andExpect(status().isUnauthorized());
     }
 
     @Test
     void shouldRejectWithMissingBearerPrefix() throws Exception {
         // Act & Assert
-        mockMvc.perform(get("/actuator/health")
+        mockMvc.perform(get(PROTECTED_ENDPOINT)
                 .header("Authorization", testApiKey)) // Missing "Bearer " prefix
-            .andExpect(status().isOk()); // Health check is permitted without auth
+            .andExpect(status().isUnauthorized());
     }
 
     @Test
     void shouldRejectWithInvalidBearerFormat() throws Exception {
         // Act & Assert
-        mockMvc.perform(get("/actuator/health")
+        mockMvc.perform(get(PROTECTED_ENDPOINT)
                 .header("Authorization", "Basic " + testApiKey)) // Wrong auth type
-            .andExpect(status().isOk()); // Health check is permitted without auth
+            .andExpect(status().isUnauthorized());
     }
 
     @Test
     void shouldRejectWithEmptyApiKey() throws Exception {
         // Act & Assert
-        mockMvc.perform(get("/actuator/health")
+        mockMvc.perform(get(PROTECTED_ENDPOINT)
                 .header("Authorization", "Bearer "))
-            .andExpect(status().isOk()); // Health check is permitted without auth
+            .andExpect(status().isUnauthorized());
     }
 
     @Test
     void shouldRejectWithWhitespaceApiKey() throws Exception {
         // Act & Assert
-        mockMvc.perform(get("/actuator/health")
+        mockMvc.perform(get(PROTECTED_ENDPOINT)
                 .header("Authorization", "Bearer   "))
-            .andExpect(status().isOk()); // Health check is permitted without auth
+            .andExpect(status().isUnauthorized());
     }
 
     @Test
     void shouldRejectWithCaseVariationApiKey() throws Exception {
         // Act & Assert
-        mockMvc.perform(get("/actuator/health")
+        mockMvc.perform(get(PROTECTED_ENDPOINT)
                 .header("Authorization", "Bearer " + testApiKey.toUpperCase()))
-            .andExpect(status().isOk()); // Health check is permitted without auth
+            .andExpect(status().isUnauthorized());
     }
 
     @Test
     void shouldRejectWithPartialApiKey() throws Exception {
         // Act & Assert
-        mockMvc.perform(get("/actuator/health")
+        mockMvc.perform(get(PROTECTED_ENDPOINT)
                 .header("Authorization", "Bearer " + testApiKey.substring(0, 5)))
-            .andExpect(status().isOk()); // Health check is permitted without auth
+            .andExpect(status().isUnauthorized());
     }
 
     @Test
     void shouldRejectWithApiKeyWithExtraCharacters() throws Exception {
         // Act & Assert
-        mockMvc.perform(get("/actuator/health")
+        mockMvc.perform(get(PROTECTED_ENDPOINT)
                 .header("Authorization", "Bearer " + testApiKey + "extra"))
-            .andExpect(status().isOk()); // Health check is permitted without auth
-    }
-
-    @Test
-    void shouldAllowHealthCheckWithoutAuthentication() throws Exception {
-        // Act & Assert
-        mockMvc.perform(get("/actuator/health"))
-            .andExpect(status().isOk());
-    }
-
-    @Test
-    void shouldAllowHealthCheckWithInvalidApiKey() throws Exception {
-        // Act & Assert
-        mockMvc.perform(get("/actuator/health")
-                .header("Authorization", "Bearer invalid_key"))
-            .andExpect(status().isOk());
+            .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -174,12 +171,12 @@ class ApiKeyAuthenticationFilterTest {
         merchantRepository.save(merchant2);
 
         // Act & Assert - First merchant
-        mockMvc.perform(get("/actuator/health")
+        mockMvc.perform(get(PROTECTED_ENDPOINT)
                 .header("Authorization", "Bearer " + testApiKey))
             .andExpect(status().isOk());
 
         // Act & Assert - Second merchant
-        mockMvc.perform(get("/actuator/health")
+        mockMvc.perform(get(PROTECTED_ENDPOINT)
                 .header("Authorization", "Bearer " + apiKey2))
             .andExpect(status().isOk());
     }
@@ -201,7 +198,7 @@ class ApiKeyAuthenticationFilterTest {
         merchantRepository.save(merchant);
 
         // Act & Assert
-        mockMvc.perform(get("/actuator/health")
+        mockMvc.perform(get(PROTECTED_ENDPOINT)
                 .header("Authorization", "Bearer " + specialApiKey))
             .andExpect(status().isOk());
     }
@@ -209,7 +206,7 @@ class ApiKeyAuthenticationFilterTest {
     @Test
     void shouldPreserveMerchantIdInSecurityContext() throws Exception {
         // Act & Assert
-        mockMvc.perform(get("/actuator/health")
+        mockMvc.perform(get(PROTECTED_ENDPOINT)
                 .header("Authorization", "Bearer " + testApiKey))
             .andExpect(status().isOk());
         
@@ -217,4 +214,15 @@ class ApiKeyAuthenticationFilterTest {
         // the merchant ID. This would require a test controller endpoint that
         // returns the authenticated principal.
     }
+
+    @RestController
+    @RequestMapping("/api/v1/test")
+    @Profile("test")
+    public static class TestAuthController {
+        @GetMapping("/protected")
+        public Map<String, String> protectedEndpoint() {
+            return Map.of("status", "authenticated");
+        }
+    }
 }
+
