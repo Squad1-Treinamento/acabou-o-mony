@@ -1,5 +1,6 @@
 package com.acabouomony.payment.infrastructure.monitoring;
 
+import com.acabouomony.payment.domain.entity.OutboxEvent;
 import com.acabouomony.payment.domain.entity.Transaction;
 import com.acabouomony.payment.domain.service.AlertService;
 import org.slf4j.Logger;
@@ -20,6 +21,7 @@ import java.util.UUID;
  * 
  * Spec: spec-001-core-payment-processing.md - Monitoring & Alerting
  * Task: task-013-unknown-state-handling.md
+ * Task: task-017-webhook-dispatch-worker.md
  * 
  * Log Format:
  * - ERROR level for all alerts (ensures visibility in log aggregation)
@@ -85,5 +87,17 @@ public class LogBasedAlertService implements AlertService {
                 "message='Reconciliation queue overflow for merchant. Dropping new reconciliation requests.'",
             merchantId,
             queueSize);
+    }
+    
+    @Override
+    public void alertWebhookDeliveryFailure(OutboxEvent event, UUID merchantId) {
+        logger.error("ALERT: WEBHOOK_DELIVERY_FAILURE - " +
+                "event_id={}, transaction_id={}, merchant_id={}, retry_count={}, " +
+                "message='Webhook delivery failed after {} retry attempts. Manual intervention required.'",
+            event.getId(),
+            event.getAggregateId(),
+            merchantId,
+            event.getRetryCount(),
+            event.getRetryCount());
     }
 }
