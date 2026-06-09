@@ -1,5 +1,7 @@
+name: acabou-o-mony
 services:
   nginx:
+    container_name: nginx
     build:
       context: ./docker/nginx
       dockerfile: Dockerfile
@@ -9,6 +11,7 @@ services:
       - UPSTREAMS=${UPSTREAMS}
       - UPSTREAM_HOST=${UPSTREAM_HOST}
       - UPSTREAM_PORT=${UPSTREAM_PORT}
+      - ENVIRONMENT=${ENVIRONMENT:-production}
       - NGINX_TEMPLATE=/etc/nginx/nginx.conf.template
       - NGINX_CONF=/etc/nginx/conf.d/default.conf
     healthcheck:
@@ -20,6 +23,7 @@ services:
       - edge-net
 
   ngrok:
+    container_name: ngrok
     image: ngrok/ngrok:alpine
     depends_on:
       - nginx
@@ -30,20 +34,20 @@ services:
     command: ["http", "http://nginx:80"]
     networks:
       - edge-net
-
-  # # Servidor de Teste A
-  # servico-a:
-  #   image: httpd:latest
-  #   entrypoint: /bin/sh -c "echo '<h1>Servidor A Customizado</h1>' > /usr/local/apache2/htdocs/index.html && httpd-foreground"
-  #   networks:
-  #     - edge-net
-
-  # # Servidor de Teste B
-  # servico-b:
-  #   image: httpd:latest
-  #   entrypoint: /bin/sh -c "echo '<h1>Servidor B Customizado</h1>' > /usr/local/apache2/htdocs/index.html && httpd-foreground"
-  #   networks:
-  #     - edge-net
+  
+  # Example httpd service (for testing reverse proxy and load balancing)
+  # Copy this block and uncomment to add more services for testing
+  ## servico-a:
+  ##   image: httpd:alpine
+  ##   container_name: servico-a
+  ##   command: [/bin/sh, -c, "echo '<html><body><h1>Servidor A</h1><p>Upstream: servico-b:80</p></body></html>' > /usr/local/apache2/htdocs/index.html && httpd-foreground"]
+  ##   networks:
+  ##     - edge-net
+  ##   healthcheck:
+  ##     test: ["CMD", "wget", "-qO-", "http://localhost/"]
+  ##     interval: 5s
+  ##     timeout: 3s
+  ##     retries: 3
   
   # Example backend service (optional)
   # app:

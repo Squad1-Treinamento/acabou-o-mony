@@ -64,7 +64,37 @@ if ! command -v envsubst >/dev/null 2>&1; then
   apk add --no-cache gettext >/dev/null 2>&1
 fi
 
+# Determine environment-specific configurations
+# ENVIRONMENT can be: production, staging, development (default: production)
+: "${ENVIRONMENT:=production}"
+
+if [ "$ENVIRONMENT" = "production" ]; then
+  DEBUG_HEADER=""
+  RATE_LIMIT="10r/s"
+  RATE_BURST="20"
+  echo "INFO: Running in PRODUCTION mode"
+  echo "  - Debug headers: disabled"
+  echo "  - Rate limit: ${RATE_LIMIT} (burst: ${RATE_BURST})"
+elif [ "$ENVIRONMENT" = "staging" ]; then
+  DEBUG_HEADER=""
+  RATE_LIMIT="50r/s"
+  RATE_BURST="50"
+  echo "INFO: Running in STAGING mode"
+  echo "  - Debug headers: disabled"
+  echo "  - Rate limit: ${RATE_LIMIT} (burst: ${RATE_BURST})"
+else
+  DEBUG_HEADER="add_header X-Upstream-Server \$upstream_addr always;"
+  RATE_LIMIT="200r/s"
+  RATE_BURST="200"
+  echo "INFO: Running in DEVELOPMENT mode"
+  echo "  - Debug headers: enabled"
+  echo "  - Rate limit: ${RATE_LIMIT} (burst: ${RATE_BURST})"
+fi
+
 export UPSTREAM_SERVERS
-envsubst '${UPSTREAM_SERVERS}' < "$NGINX_TEMPLATE" > "$NGINX_CONF"
+export DEBUG_HEADER
+export RATE_LIMIT
+export RATE_BURST
+envsubst '${UPSTREAM_SERVERS} ${DEBUG_HEADER} ${RATE_LIMIT} ${RATE_BURST}' < "$NGINX_TEMPLATE" > "$NGINX_CONF"
 
 exec nginx -g "daemon off;"
