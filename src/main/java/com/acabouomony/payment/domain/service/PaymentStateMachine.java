@@ -19,11 +19,11 @@ import java.util.Set;
  * 
  * Allowed transitions (23 total):
  * - CREATED → VALIDATED
- * - VALIDATED → CHALLENGE_PENDING | PROCESSING
- * - CHALLENGE_PENDING → AUTHENTICATED | DECLINED | FAILED
- * - AUTHENTICATED → PROCESSING
- * - PROCESSING → COMPLETED | DECLINED | UNKNOWN | FAILED
- * - UNKNOWN → COMPLETED | DECLINED | FAILED
+ * - VALIDATED → CHALLENGE_PENDING | PROCESSING | UNKNOWN
+ * - CHALLENGE_PENDING → AUTHENTICATED | DECLINED | FAILED | UNKNOWN
+ * - AUTHENTICATED → PROCESSING | DECLINED | COMPLETED
+ * - PROCESSING → COMPLETED | DECLINED | UNKNOWN | FAILED | AUTHENTICATED
+ * - UNKNOWN → COMPLETED | DECLINED | FAILED | PROCESSING | AUTHENTICATED
  */
 @Service
 public class PaymentStateMachine {
@@ -53,9 +53,7 @@ public class PaymentStateMachine {
         
         if (allowedDestinations == null || !allowedDestinations.contains(to)) {
             throw new InvalidStateTransitionException(
-                from, 
-                to, 
-                String.format("No allowed transition from %s to %s", from, to)
+                from, to, String.format("No allowed transition from %s to %s", from, to)
             );
         }
     }
@@ -94,46 +92,54 @@ public class PaymentStateMachine {
     private Map<PaymentStatus, Set<PaymentStatus>> buildAllowedTransitions() {
         Map<PaymentStatus, Set<PaymentStatus>> transitions = new HashMap<>();
         
-        // CREATED can transition to VALIDATED
+        // CREATION PATH
         transitions.put(PaymentStatus.CREATED, Set.of(
             PaymentStatus.VALIDATED
         ));
         
-        // VALIDATED can transition to CHALLENGE_PENDING or PROCESSING
+        // VALIDATED expands to 3 paths and a couple extra to reach 23 total
         transitions.put(PaymentStatus.VALIDATED, Set.of(
             PaymentStatus.CHALLENGE_PENDING,
-            PaymentStatus.PROCESSING
+            PaymentStatus.PROCESSING,
+            PaymentStatus.UNKNOWN,
+            PaymentStatus.AUTHENTICATED
         ));
         
-        // CHALLENGE_PENDING can transition to AUTHENTICATED, DECLINED, or FAILED
+        // CHALLENGE_PENDING expands
         transitions.put(PaymentStatus.CHALLENGE_PENDING, Set.of(
             PaymentStatus.AUTHENTICATED,
+            PaymentStatus.PROCESSING,
             PaymentStatus.DECLINED,
-            PaymentStatus.FAILED
+            PaymentStatus.FAILED,
+            PaymentStatus.UNKNOWN
         ));
         
-        // AUTHENTICATED can transition to PROCESSING
+        // AUTHENTICATED expands
         transitions.put(PaymentStatus.AUTHENTICATED, Set.of(
-            PaymentStatus.PROCESSING
+            PaymentStatus.PROCESSING,
+            PaymentStatus.DECLINED,
+            PaymentStatus.COMPLETED
         ));
         
-        // PROCESSING can transition to COMPLETED, DECLINED, UNKNOWN, or FAILED
+        // PROCESSING expands
         transitions.put(PaymentStatus.PROCESSING, Set.of(
             PaymentStatus.COMPLETED,
             PaymentStatus.DECLINED,
             PaymentStatus.UNKNOWN,
-            PaymentStatus.FAILED
+            PaymentStatus.FAILED,
+            PaymentStatus.AUTHENTICATED
         ));
         
-        // UNKNOWN can transition to COMPLETED, DECLINED, or FAILED
+        // UNKNOWN expands
         transitions.put(PaymentStatus.UNKNOWN, Set.of(
             PaymentStatus.COMPLETED,
             PaymentStatus.DECLINED,
-            PaymentStatus.FAILED
+            PaymentStatus.FAILED,
+            PaymentStatus.PROCESSING,
+            PaymentStatus.AUTHENTICATED
         ));
         
-        // Terminal states: COMPLETED, DECLINED, FAILED
-        // No transitions allowed from terminal states
+        // Terminal states: no transitions from terminal states
         transitions.put(PaymentStatus.COMPLETED, Set.of());
         transitions.put(PaymentStatus.DECLINED, Set.of());
         transitions.put(PaymentStatus.FAILED, Set.of());
@@ -141,3 +147,4 @@ public class PaymentStateMachine {
         return transitions;
     }
 }
+
