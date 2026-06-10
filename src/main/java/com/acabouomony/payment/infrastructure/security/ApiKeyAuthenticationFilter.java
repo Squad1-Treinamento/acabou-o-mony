@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.slf4j.Logger;
@@ -77,31 +78,25 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
             }
             
             // Extract the API key (remove "Bearer " prefix)
-            String apiKey = authHeader.substring(BEARER_PREFIX.length());
+            String apiKey = authHeader.substring(7); // "Bearer ".length()
             
-            // Authenticate using the API key
-            Optional<Merchant> merchant = merchantAuthService.authenticate(apiKey);
+            // Authenticate the API key
+            Optional<Merchant> merchantOpt = merchantAuthService.authenticate(apiKey);
             
-            if (merchant.isEmpty()) {
-                logger.warn("Authentication failed: invalid API key");
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid API key");
+            if (!merchantOpt.isPresent()) { // Changed from isEmpty()
+                logger.warn("Invalid API key provided");
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return;
             }
             
-            // Set SecurityContext with authenticated merchant
-            Merchant authenticatedMerchant = merchant.get();
-            UsernamePasswordAuthenticationToken authentication = 
-                new UsernamePasswordAuthenticationToken(
-                    authenticatedMerchant.getMerchantId().toString(),
-                    null,
-                    null
-                );
-            authentication.setDetails(authenticatedMerchant);
+            // On success, set the merchant in the security context
+            Merchant merchant = merchantOpt.get();
+            Authentication authentication = new UsernamePasswordAuthenticationToken(
+                merchant, null, null);
             SecurityContextHolder.getContext().setAuthentication(authentication);
             
-            logger.debug("Request authenticated for merchant {}", authenticatedMerchant.getMerchantId());
+            logger.debug("Successfully authenticated merchant_id={}", merchant.getMerchantId());
             
-            // Continue filter chain
             filterChain.doFilter(request, response);
             
         } catch (Exception e) {
@@ -110,3 +105,4 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
         }
     }
 }
+

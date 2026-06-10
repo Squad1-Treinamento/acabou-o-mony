@@ -163,7 +163,7 @@ public class DuplicateRequestRecoveryService {
         PaymentResponseDTO errorResponse = PaymentResponseDTO.builder()
             .transactionId(existingTransaction.getId())
             .status(PaymentStatus.UNKNOWN)
-            .amount(existingTransaction.getAmount())
+            .amount(existingTransaction.getAmount().longValue())
             .currency(existingTransaction.getCurrency())
             .message("Idempotency key mismatch: payload differs. " +
                 "Same idempotency_key cannot be used for different payments. " +
@@ -225,3 +225,4 @@ public class DuplicateRequestRecoveryService {
         responseCache.invalidate(merchantId, idempotencyKey);
     }
 }
+

@@ -65,19 +65,19 @@ public class IdempotencyService {
             PaymentRequest request) {
         
         // Query database for existing transaction with same merchant + idempotency_key
-        Optional<Transaction> existing = transactionRepository.findByMerchantIdAndIdempotencyKey(
-            merchantId,
-            idempotencyKey
+        Optional<Transaction> existingTx = transactionRepository.findByIdempotencyKeyAndMerchantId(
+            idempotencyKey,
+            merchantId
         );
         
-        if (existing.isEmpty()) {
+        if (!existingTx.isPresent()) {
             logger.debug("No existing transaction for merchant={}, idempotency_key={}", merchantId, idempotencyKey);
             return Optional.empty();
         }
         
-        Transaction existingTx = existing.get();
+        Transaction tx = existingTx.get();
         String currentPayloadHash = payloadHashingService.computePayloadHash(request);
-        String storedPayloadHash = existingTx.getPayloadHash();
+        String storedPayloadHash = tx.getPayloadHash();
         
         // Validate payload hash matches
         if (!currentPayloadHash.equals(storedPayloadHash)) {
@@ -98,7 +98,7 @@ public class IdempotencyService {
             merchantId, idempotencyKey
         );
         
-        return existing;
+        return existingTx;
     }
     
     /**
@@ -150,3 +150,4 @@ public class IdempotencyService {
         return hash;
     }
 }
+

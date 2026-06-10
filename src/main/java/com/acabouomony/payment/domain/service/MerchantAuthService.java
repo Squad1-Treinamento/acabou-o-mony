@@ -2,11 +2,13 @@ package com.acabouomony.payment.domain.service;
 
 import com.acabouomony.payment.domain.entity.Merchant;
 import com.acabouomony.payment.domain.repository.MerchantRepository;
-import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -16,7 +18,7 @@ import java.util.Optional;
  * - Argon2 hashing with secure parameters (memory=64MB, iterations=3, parallelism=1)
  * - Timing-safe comparison (prevents timing attacks)
  * - No plaintext key logging
- * - Constant-time hash comparison via Argon2PasswordEncoder.matches()
+ * - Constant-time hash comparison via PasswordEncoder.matches()
  * - Fetch-all-and-verify approach (necessary due to salted hashing)
  * 
  * Authentication Strategy:
@@ -35,20 +37,13 @@ public class MerchantAuthService {
     private static final Logger logger = LoggerFactory.getLogger(MerchantAuthService.class);
     
     private final MerchantRepository merchantRepository;
-    private final Argon2PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
     
-    public MerchantAuthService(MerchantRepository merchantRepository) {
+    @Autowired
+    public MerchantAuthService(MerchantRepository merchantRepository, PasswordEncoder passwordEncoder) {
         this.merchantRepository = merchantRepository;
-        // Argon2PasswordEncoder with secure parameters
-        // Parameters: saltLength=16, hashLength=32, parallelism=1, memory=65536 KB (64 MB), iterations=3
-        // Security note: Argon2's strength comes from the combination of:
-        // - Memory (65536 KB = 64 MB): Primary defense against brute-force attacks
-        // - Iterations (3): Number of passes over memory
-        // - Parallelism (1): Number of parallel threads
-        // These are recommended defaults providing strong protection.
-        this.passwordEncoder = new Argon2PasswordEncoder(16, 32, 1, 65536, 3);
+        this.passwordEncoder = passwordEncoder;
     }
-    
     /**
      * Authenticates a merchant using their API key.
      * 
@@ -69,33 +64,30 @@ public class MerchantAuthService {
      * @return Optional containing the authenticated Merchant, or empty if not found
      */
     public Optional<Merchant> authenticate(String apiKey) {
-        if (apiKey == null || apiKey.isEmpty()) {
-            logger.warn("Authentication attempt with null or empty API key");
+        if (apiKey == null || apiKey.trim().isEmpty()) {
             return Optional.empty();
         }
         
-        logger.info("Authentication attempt initiated");
-        
+        logger.debug("Initiating API key authentication.");
         // Query all merchants and verify each one
         // This is necessary because Argon2 generates different hashes for the same input
         // (due to random salt), so we cannot query by hash directly
-        return merchantRepository.findAll().stream()
-            .filter(merchant -> passwordEncoder.matches(apiKey, merchant.getApiKeyHash()))
-            .findFirst()
-            .map(merchant -> {
-                logger.info("Authentication successful for merchant {}", merchant.getMerchantId());
-                return merchant;
-            })
-            .or(() -> {
-                logger.warn("Authentication failed: no merchant found with provided API key");
+        List<Merchant> allMerchants = merchantRepository.findAll();
+
+        for (Merchant merchant : allMerchants) {
+            if (passwordEncoder.matches(apiKey, merchant.getApiKeyHash())) {
+                logger.info("Authentication successful for merchant_id={}", merchant.getMerchantId());
+                return Optional.of(merchant);
+            }
+        }
+        logger.warn("Authentication failed. No merchant found for the provided API key.");
                 return Optional.empty();
-            });
     }
     
     /**
      * Hashes an API key using Argon2.
      * 
-     * Uses Spring Security's Argon2PasswordEncoder with:
+     * Uses Spring Security's PasswordEncoder with:
      * - Salt length: 16 bytes
      * - Hash length: 32 bytes
      * - Parallelism: 1
@@ -118,7 +110,7 @@ public class MerchantAuthService {
     /**
      * Verifies that a plaintext API key matches a stored hash.
      * 
-     * Uses Argon2PasswordEncoder's timing-safe comparison.
+     * Uses PasswordEncoder's timing-safe comparison.
      * The encoder extracts the salt from the stored hash and re-hashes
      * the provided plaintext, then compares using constant-time logic.
      * 
@@ -133,3 +125,4 @@ public class MerchantAuthService {
         return passwordEncoder.matches(plaintext, hash);
     }
 }
+

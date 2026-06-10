@@ -7,6 +7,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer; // <-- Added missing import
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -63,6 +64,13 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /*
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new Argon2PasswordEncoder(16, 32, 1, 65536, 3);
+    }
+    */
+
     /**
      * Configures Argon2 password encoder.
      *
@@ -79,4 +87,5 @@ public class SecurityConfig {
     public Argon2PasswordEncoder argon2PasswordEncoder() {
         return new Argon2PasswordEncoder(16, 32, 1, 65536, 3);
     }
-} // <-- Moved this closing brace to the very end of the file
+}
+

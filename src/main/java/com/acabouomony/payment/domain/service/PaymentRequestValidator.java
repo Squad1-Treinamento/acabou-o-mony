@@ -2,7 +2,7 @@ package com.acabouomony.payment.domain.service;
 
 import com.acabouomony.payment.domain.dto.PaymentRequest;
 import com.acabouomony.payment.domain.exception.PaymentValidationException;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +20,7 @@ import java.util.*;
  * 
  * Spec: spec-001-core-payment-processing.md - Request Validation Rules
  */
-@Service
+@Component
 public class PaymentRequestValidator {
     
     private static final Logger logger = LoggerFactory.getLogger(PaymentRequestValidator.class);
@@ -185,29 +185,43 @@ public class PaymentRequestValidator {
             return;
         }
         
-        // Validate card_token_id
-        if (paymentMethod.getCardTokenId() == null) {
-            errors.add("payment_method.card_token_id cannot be null");
+        if (paymentMethod.getType() == null) {
+            errors.add("payment_method.type cannot be null");
             return;
         }
         
-        if (paymentMethod.getCardTokenId().isBlank()) {
-            errors.add("payment_method.card_token_id cannot be blank");
-            return;
-        }
-        
-        if (paymentMethod.getCardTokenId().length() > 100) {
-            errors.add("payment_method.card_token_id must not exceed 100 characters");
-        }
-        
-        // Validate masked_card (optional)
-        if (paymentMethod.getMaskedCard() != null) {
-            if (!paymentMethod.getMaskedCard().matches("^[0-9]{6}X{6,8}[0-9]{4}$")) {
-                errors.add("payment_method.masked_card must match format: 6 digits + X's + 4 digits (e.g., 411111XXXXXX1111)");
-            }
+        switch (paymentMethod.getType()) {
+            case CARD:
+                validateCardPaymentMethod(paymentMethod, errors);
+                break;
+            // Add other payment method validations here
+            default:
+                errors.add("Unsupported payment method type: " + paymentMethod.getType());
         }
     }
-    
+        
+    /**
+     * Validates card payment method details.
+     * 
+     * @param paymentMethod The payment method to validate
+     * @param errors List to accumulate validation errors
+     */
+    private void validateCardPaymentMethod(PaymentRequest.PaymentMethod paymentMethod, List<String> errors) {
+        String maskedCard = paymentMethod.getMaskedCard();
+        String cardTokenId = paymentMethod.getCardTokenId();
+
+        if (maskedCard == null || maskedCard.trim().isEmpty()) {
+            errors.add("Masked card number is required for card payments");
+        } else if (!maskedCard.matches("^[0-9]{6}X{6,8}[0-9]{4}$")) {
+            errors.add("payment_method.masked_card must match format: 6 digits + X's + 4 digits (e.g., 411111XXXXXX1111)");
+        }
+        
+        if (cardTokenId == null || cardTokenId.trim().isEmpty()) {
+            errors.add("Card token ID is required for card payments");
+        } else if (cardTokenId.length() > 100) {
+            errors.add("payment_method.card_token_id must not exceed 100 characters");
+        }
+    }
     /**
      * Validates optional customer information.
      * 

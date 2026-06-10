@@ -39,7 +39,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
      * @param idempotencyKey The idempotency key
      * @return Optional containing transaction if found, empty otherwise
      */
-    Optional<Transaction> findByMerchantIdAndIdempotencyKey(UUID merchantId, UUID idempotencyKey);
+    // Ensure this signature uses String for the idempotencyKey
+    Optional<Transaction> findByIdempotencyKeyAndMerchantId(UUID idempotencyKey, UUID merchantId);
     
     /**
      * Finds all transactions for a specific merchant.

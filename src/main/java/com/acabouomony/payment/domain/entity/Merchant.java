@@ -23,6 +23,8 @@ public class Merchant {
     private String apiKeyHash;
     @Column(name = "webhook_url", length = 255)
     private String webhookUrl;
+    @Column(name = "webhook_secret")
+    private String webhookSecret;
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 }

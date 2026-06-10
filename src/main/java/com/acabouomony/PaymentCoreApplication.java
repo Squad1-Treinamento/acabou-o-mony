@@ -8,6 +8,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class PaymentCoreApplication {
     public static void main(String[] args) {
+        System.out.println("--- RUNNING WITH JAVA VERSION: " + System.getProperty("java.version") + " ---");
         SpringApplication.run(PaymentCoreApplication.class, args);
     }
 }

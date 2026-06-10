@@ -78,9 +78,9 @@ public class DuplicatePaymentHandler {
         logger.debug("Handling duplicate payment: merchant={}, idempotency_key={}", merchantId, idempotencyKey);
         
         // Query database for existing transaction
-        Optional<Transaction> existing = transactionRepository.findByMerchantIdAndIdempotencyKey(
-            merchantId,
-            idempotencyKey
+        Optional<Transaction> existing = transactionRepository.findByIdempotencyKeyAndMerchantId(
+            idempotencyKey,
+            merchantId
         );
         
         if (existing.isEmpty()) {
@@ -135,12 +135,12 @@ public class DuplicatePaymentHandler {
         PaymentResponseDTO response = PaymentResponseDTO.builder()
             .transactionId(transaction.getId())
             .status(status)
-            .amount(transaction.getAmount())
+            .amount(transaction.getAmount().longValue())
             .currency(transaction.getCurrency())
             .maskedCard(transaction.getMaskedCard())
             .createdAt(transaction.getCreatedAt())
             .updatedAt(transaction.getUpdatedAt())
-                .idempotencyKey(transaction.getIdempotencyKey())
+            .idempotencyKey(UUID.fromString(transaction.getIdempotencyKey()))
             .build();
         
         // Terminal states: safe to return cached response
@@ -230,3 +230,4 @@ public class DuplicatePaymentHandler {
         return ResponseEntity.accepted().body(response);
     }
 }
+

@@ -1,4 +1,4 @@
-package com.acabouomony.payment.infrastructure.config;
+package com.acabouomony.payment.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -6,6 +6,7 @@ import com.acabouomony.payment.domain.service.WebhookDispatchService;
 import com.acabouomony.payment.infrastructure.persistence.OutboxEventRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -50,9 +51,11 @@ public class WebhookDispatchWorker {
     
     private static final Logger logger = LoggerFactory.getLogger(WebhookDispatchWorker.class);
     
-    private static final int BATCH_SIZE = 100;
-    private static final long SLA_THRESHOLD_MINUTES = 5;
-    
+    @Value("${webhook.batch-size}")
+    private int batchSize;
+
+    @Value("${webhook.sla-threshold-minutes}")
+    private long slaThresholdMinutes;
     private final OutboxEventRepository outboxEventRepository;
     private final WebhookDispatchService webhookDispatchService;
     
@@ -70,7 +73,7 @@ public class WebhookDispatchWorker {
      * Batches up to 100 events per poll for efficiency.
      * Submits each event to virtual thread executor for non-blocking dispatch.
      */
-    @Scheduled(fixedRate = 100)
+    @Scheduled(fixedRateString = "${webhook.polling-interval-ms}")
     public void dispatchPendingWebhooks() {
         try {
             // Query PENDING events (limit to batch size)
@@ -81,8 +84,8 @@ public class WebhookDispatchWorker {
             }
             
             // Limit to batch size
-            int batchSize = Math.min(pendingEvents.size(), BATCH_SIZE);
-            List<OutboxEvent> batch = pendingEvents.subList(0, batchSize);
+            int currentBatchSize = Math.min(pendingEvents.size(), batchSize);
+            List<OutboxEvent> batch = pendingEvents.subList(0, currentBatchSize);
             
             logger.debug("Found {} pending webhook events for dispatch", batch.size());
             
@@ -102,10 +105,10 @@ public class WebhookDispatchWorker {
      * Runs every 30 seconds to check for stale pending webhooks.
      * Alerts operator if any webhook exceeds SLA threshold.
      */
-    @Scheduled(fixedRate = 30000)
+    @Scheduled(fixedRateString = "${webhook.sla-monitor-interval-ms}")
     public void monitorWebhookSLA() {
         try {
-            Instant slaThreshold = Instant.now().minusSeconds(SLA_THRESHOLD_MINUTES * 60);
+            Instant slaThreshold = Instant.now().minusSeconds(slaThresholdMinutes * 60);
             
             // Find all PENDING events older than SLA threshold
             List<OutboxEvent> stalePendingEvents = outboxEventRepository.findByStatus(OutboxEventStatus.PENDING)
@@ -115,7 +118,7 @@ public class WebhookDispatchWorker {
             
             if (!stalePendingEvents.isEmpty()) {
                 logger.error("ALERT: WEBHOOK_SLA_VIOLATION - {} webhooks pending > {} minutes",
-                    stalePendingEvents.size(), SLA_THRESHOLD_MINUTES);
+                    stalePendingEvents.size(), slaThresholdMinutes);
                 
                 for (OutboxEvent event : stalePendingEvents) {
                     long ageMinutes = (Instant.now().toEpochMilli() - event.getCreatedAt().toEpochMilli()) / 60000;
@@ -147,8 +150,8 @@ public class WebhookDispatchWorker {
                 // Dispatch webhook
                 webhookDispatchService.dispatchWebhook(event);
                 
-                logger.info("Webhook dispatch completed: event_id={}, transaction_id={}",
-                    event.getId(), event.getAggregateId());
+                logger.info("Webhook dispatch processing finished for event_id={}",
+                    event.getId());
                 
             } catch (Exception e) {
                 logger.error("Error dispatching webhook: event_id={}, transaction_id={}, error={}",

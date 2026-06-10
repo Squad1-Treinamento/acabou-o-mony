@@ -13,7 +13,7 @@ import java.util.UUID;
 @Table(
     name = "transactions",
     uniqueConstraints = {
-        @UniqueConstraint(name = "uk_merchant_id_idempotency_key", columnNames = {"merchant_id", "idempotency_key"})
+        @UniqueConstraint(columnNames = {"merchant_id", "idempotency_key"})
     },
     indexes = {
         @Index(name = "idx_merchant_id", columnList = "merchant_id"),
@@ -39,7 +39,7 @@ public class Transaction {
     @NotNull
     @Min(value = 1, message = "amount must be greater than 0")
     @Column(nullable = false)
-    private long amount;
+    private Long amount;
 
     @NotNull
     @Size(min = 3, max = 3, message = "currency must be exactly 3 characters (ISO 4217)")
@@ -76,3 +76,6 @@ public class Transaction {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 }
+
+
+

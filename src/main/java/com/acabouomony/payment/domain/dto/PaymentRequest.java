@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.acabouomony.payment.domain.model.PaymentMethodType;
 
 import java.util.UUID;
 
@@ -111,6 +112,15 @@ public class PaymentRequest {
     public static class PaymentMethod {
         
         /**
+         * Payment method type.
+         * 
+         * Validation:
+         * - Must not be null
+         */
+        @NotNull
+        @JsonProperty("type")
+        private PaymentMethodType type;
+        /**
          * Card token ID (from tokenization service).
          * 
          * Validation:
@@ -125,7 +135,6 @@ public class PaymentRequest {
         @Size(min = 1, max = 100, message = "card_token_id must be between 1 and 100 characters")
         @JsonProperty("card_token_id")
         private String cardTokenId;
-        
         /**
          * Masked card number (e.g., "411111XXXXXX1111").
          * 
@@ -146,3 +155,4 @@ public class PaymentRequest {
         private String maskedCard;
     }
 }
+
