@@ -3,10 +3,32 @@
 .claude/settings.local.json
 .claude/auth.local.md
 .claude-worktrees/
-.DS_Store
 tasks/**
-qa-output/**
 debug-output/
 .playwright-cli/
-.env
 */__pycache__/
+**/target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# AI / local config
+.claude/
+
+# Generated reports
+qa-output/**
+
+# Maven wrapper binary
+.mvn/wrapper/maven-wrapper.jar
+
+# Environment files
+.env
+.env.local
