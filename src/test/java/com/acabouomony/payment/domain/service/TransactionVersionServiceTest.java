@@ -54,7 +54,7 @@ class TransactionVersionServiceTest {
             .idempotencyKey(idempotencyKey)
             .amount(10000L)
             .currency("BRL")
-            .status(PaymentStatus.CREATED.toString())
+            .status(PaymentStatus.valueOf(PaymentStatus.CREATED.toString()))
             .payloadHash("hash123")
             .version(0)
             .createdAt(Instant.now())

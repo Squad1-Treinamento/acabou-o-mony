@@ -1,4 +1,4 @@
-﻿package com.acabouomony.payment.infrastructure.client;
+package com.acabouomony.payment.infrastructure.client;
 
 import com.acabouomony.payment.domain.entity.Transaction;
 import com.acabouomony.payment.domain.model.PaymentStatus;
