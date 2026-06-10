@@ -1,0 +1,60 @@
+name: acabou-o-mony
+services:
+  nginx:
+    container_name: nginx
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    environment:
+      - UPSTREAMS=${UPSTREAMS}
+      - UPSTREAM_HOST=${UPSTREAM_HOST}
+      - UPSTREAM_PORT=${UPSTREAM_PORT}
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - NGINX_TEMPLATE=/etc/nginx/nginx.conf.template
+      - NGINX_CONF=/etc/nginx/conf.d/default.conf
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/healthz >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - edge-net
+
+  ngrok:
+    container_name: ngrok
+    image: ngrok/ngrok:alpine
+    depends_on:
+      - nginx
+    ports:
+      - "4040:4040"
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    command: ["http", "http://nginx:80"]
+    networks:
+      - edge-net
+  
+  # Example httpd service (for testing reverse proxy and load balancing)
+  # Copy this block and uncomment to add more services for testing
+  ## servico-a:
+  ##   image: httpd:alpine
+  ##   container_name: servico-a
+  ##   command: [/bin/sh, -c, "echo '<html><body><h1>Servidor A</h1><p>Upstream: servico-b:80</p></body></html>' > /usr/local/apache2/htdocs/index.html && httpd-foreground"]
+  ##   networks:
+  ##     - edge-net
+  ##   healthcheck:
+  ##     test: ["CMD", "wget", "-qO-", "http://localhost/"]
+  ##     interval: 5s
+  ##     timeout: 3s
+  ##     retries: 3
+  
+  # Example backend service (optional)
+  # app:
+  #   image: nginx:alpine
+  #   networks:
+  #     - edge-net
+
+networks:
+  edge-net:
+    driver: bridge

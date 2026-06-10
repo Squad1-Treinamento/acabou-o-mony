@@ -1,3 +1,12 @@
+# .claude
+.devcontainer/.env
+.claude/settings.local.json
+.claude/auth.local.md
+.claude-worktrees/
+tasks/**
+debug-output/
+.playwright-cli/
+*/__pycache__/
 **/target/
 
 # IDE
@@ -15,7 +24,7 @@ Thumbs.db
 .claude/
 
 # Generated reports
-qa-output/
+qa-output/**
 
 # Maven wrapper binary
 .mvn/wrapper/maven-wrapper.jar
