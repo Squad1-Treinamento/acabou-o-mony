@@ -140,6 +140,7 @@ public class DuplicatePaymentHandler {
             .maskedCard(transaction.getMaskedCard())
             .createdAt(transaction.getCreatedAt())
             .updatedAt(transaction.getUpdatedAt())
+                .idempotencyKey(transaction.getIdempotencyKey())
             .build();
         
         // Terminal states: safe to return cached response

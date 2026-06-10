@@ -1,13 +1,16 @@
 package com.acabouomony.payment.web;
 
 import com.acabouomony.payment.domain.dto.PaymentRequest;
+import com.acabouomony.payment.domain.entity.Merchant;
 import com.acabouomony.payment.domain.entity.Transaction;
+import com.acabouomony.payment.domain.exception.MerchantAuthenticationException;
 import com.acabouomony.payment.domain.exception.PaymentValidationException;
 import com.acabouomony.payment.domain.model.PaymentStatus;
 import com.acabouomony.payment.domain.service.*;
 import com.acabouomony.payment.infrastructure.persistence.TransactionRepository;
 import com.acabouomony.payment.web.dto.PaymentResponseDTO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -102,9 +105,9 @@ public class PaymentController {
         
         try {
             // Step 0: Authenticate merchant
-            // TODO: Implement merchant authentication (Task-004)
-            // For now, use a placeholder merchant ID
-            UUID merchantId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+            UUID merchantId = merchantAuthService.authenticate(authHeader)
+                .map(Merchant::getId)
+                .orElseThrow(() -> new MerchantAuthenticationException("Invalid or missing API key"));
             logger.debug("Merchant authenticated: {}", merchantId);
             
             // Step 1: Check response cache (fast-path)
@@ -234,6 +237,9 @@ public class PaymentController {
                 return response;
             }
             
+        } catch (MerchantAuthenticationException e) {
+            logger.warn("Merchant authentication failed: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         } catch (PaymentValidationException e) {
             logger.warn("Payment validation failed: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
@@ -242,4 +248,44 @@ public class PaymentController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    /**
+     * Retrieves the status and details of a specific payment.
+     *
+     * @param transactionId The UUID of the transaction to retrieve.
+     * @return ResponseEntity with payment details or 404 if not found.
+     */
+    @GetMapping("/{transactionId}")
+    public ResponseEntity<PaymentResponseDTO> getPaymentStatus(
+            @PathVariable("transactionId") UUID transactionId,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+        logger.info("Request to get status for transaction_id={}", transactionId);
+
+        try {
+            // Authenticate the merchant first
+            UUID merchantId = merchantAuthService.authenticate(authHeader)
+                .map(Merchant::getId)
+                .orElseThrow(() -> new MerchantAuthenticationException("Invalid or missing API key"));
+            logger.debug("Merchant authenticated for status check: {}", merchantId);
+
+        Optional<Transaction> transactionOpt = transactionRepository.findById(transactionId);
+
+        return transactionOpt
+                    .filter(transaction -> transaction.getMerchantId().equals(merchantId)) // Authorization check
+                .map(transaction -> {
+                    // Reuse the existing handler to build a consistent response
+                        logger.info("Transaction found for merchant: id={}, status={}", transaction.getId(), transaction.getStatus());
+                    return duplicatePaymentHandler.buildDuplicateResponse(transaction);
+                })
+                .orElseGet(() -> {
+                        logger.warn("Transaction not found for id={} or merchant not authorized", transactionId);
+                    return ResponseEntity.notFound().build();
+                });
+        } catch (MerchantAuthenticationException e) {
+            logger.warn("Merchant authentication failed: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
 }
+}
+
