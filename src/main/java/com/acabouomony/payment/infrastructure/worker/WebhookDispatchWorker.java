@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Background worker for reliable webhook delivery to merchants.
@@ -110,7 +111,7 @@ public class WebhookDispatchWorker {
             List<OutboxEvent> stalePendingEvents = outboxEventRepository.findByStatus(OutboxEventStatus.PENDING)
                 .stream()
                 .filter(event -> event.getCreatedAt().isBefore(slaThreshold))
-                .toList();
+                .collect(Collectors.toList());
             
             if (!stalePendingEvents.isEmpty()) {
                 logger.error("ALERT: WEBHOOK_SLA_VIOLATION - {} webhooks pending > {} minutes",
@@ -156,3 +157,4 @@ public class WebhookDispatchWorker {
         });
     }
 }
+

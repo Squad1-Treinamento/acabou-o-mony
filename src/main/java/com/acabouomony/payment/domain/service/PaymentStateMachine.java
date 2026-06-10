@@ -5,10 +5,12 @@ import com.acabouomony.payment.domain.model.PaymentStatus;
 import com.acabouomony.payment.domain.model.StateTransition;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.Arrays;
 
 /**
  * Payment State Machine Service
@@ -93,57 +95,69 @@ public class PaymentStateMachine {
         Map<PaymentStatus, Set<PaymentStatus>> transitions = new HashMap<>();
         
         // CREATION PATH
-        transitions.put(PaymentStatus.CREATED, Set.of(
+        transitions.put(PaymentStatus.CREATED, Collections.unmodifiableSet(
+            new HashSet<>(Arrays.asList(
             PaymentStatus.VALIDATED
+            ))
         ));
         
         // VALIDATED expands to 3 paths and a couple extra to reach 23 total
-        transitions.put(PaymentStatus.VALIDATED, Set.of(
-            PaymentStatus.CHALLENGE_PENDING,
-            PaymentStatus.PROCESSING,
-            PaymentStatus.UNKNOWN,
-            PaymentStatus.AUTHENTICATED
+        transitions.put(PaymentStatus.VALIDATED, Collections.unmodifiableSet(
+            new HashSet<>(Arrays.asList(
+                PaymentStatus.CHALLENGE_PENDING,
+                PaymentStatus.PROCESSING,
+                PaymentStatus.UNKNOWN,
+                PaymentStatus.AUTHENTICATED
+            ))
         ));
         
         // CHALLENGE_PENDING expands
-        transitions.put(PaymentStatus.CHALLENGE_PENDING, Set.of(
-            PaymentStatus.AUTHENTICATED,
-            PaymentStatus.PROCESSING,
-            PaymentStatus.DECLINED,
+        transitions.put(PaymentStatus.CHALLENGE_PENDING, Collections.unmodifiableSet(
+            new HashSet<>(Arrays.asList(
+                PaymentStatus.AUTHENTICATED,
+                PaymentStatus.PROCESSING,
+                PaymentStatus.DECLINED,
             PaymentStatus.FAILED,
             PaymentStatus.UNKNOWN
+            ))
         ));
         
         // AUTHENTICATED expands
-        transitions.put(PaymentStatus.AUTHENTICATED, Set.of(
-            PaymentStatus.PROCESSING,
-            PaymentStatus.DECLINED,
-            PaymentStatus.COMPLETED
+        transitions.put(PaymentStatus.AUTHENTICATED, Collections.unmodifiableSet(
+            new HashSet<>(Arrays.asList(
+                PaymentStatus.PROCESSING,
+                PaymentStatus.DECLINED,
+                PaymentStatus.COMPLETED
+            ))
         ));
         
         // PROCESSING expands
-        transitions.put(PaymentStatus.PROCESSING, Set.of(
-            PaymentStatus.COMPLETED,
-            PaymentStatus.DECLINED,
-            PaymentStatus.UNKNOWN,
-            PaymentStatus.FAILED,
-            PaymentStatus.AUTHENTICATED
+        transitions.put(PaymentStatus.PROCESSING, Collections.unmodifiableSet(
+            new HashSet<>(Arrays.asList(
+                PaymentStatus.COMPLETED,
+                PaymentStatus.DECLINED,
+                PaymentStatus.UNKNOWN,
+                PaymentStatus.FAILED,
+                PaymentStatus.AUTHENTICATED
+            ))
         ));
         
         // UNKNOWN expands
-        transitions.put(PaymentStatus.UNKNOWN, Set.of(
-            PaymentStatus.COMPLETED,
-            PaymentStatus.DECLINED,
-            PaymentStatus.FAILED,
-            PaymentStatus.PROCESSING,
-            PaymentStatus.AUTHENTICATED
+        transitions.put(PaymentStatus.UNKNOWN, Collections.unmodifiableSet(
+            new HashSet<>(Arrays.asList(
+                PaymentStatus.COMPLETED,
+                PaymentStatus.DECLINED,
+                PaymentStatus.FAILED,
+                PaymentStatus.PROCESSING,
+                PaymentStatus.AUTHENTICATED
+            ))
         ));
         
         // Terminal states: no transitions from terminal states
-        transitions.put(PaymentStatus.COMPLETED, Set.of());
-        transitions.put(PaymentStatus.DECLINED, Set.of());
-        transitions.put(PaymentStatus.FAILED, Set.of());
-        
+        transitions.put(PaymentStatus.COMPLETED, Collections.unmodifiableSet(new HashSet<>()));
+        transitions.put(PaymentStatus.DECLINED, Collections.unmodifiableSet(new HashSet<>()));
+        transitions.put(PaymentStatus.FAILED, Collections.unmodifiableSet(new HashSet<>()));
+
         return transitions;
     }
 }

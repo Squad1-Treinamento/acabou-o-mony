@@ -36,13 +36,13 @@ public class StateTransitionValidator {
     
     private static final Logger logger = LoggerFactory.getLogger(StateTransitionValidator.class);
     
-    private static final Map<PaymentStatus, Set<PaymentStatus>> VALID_TRANSITIONS = Map.ofEntries(
-        Map.entry(PaymentStatus.CREATED, Set.of(PaymentStatus.VALIDATED)),
-        Map.entry(PaymentStatus.VALIDATED, Set.of(PaymentStatus.CHALLENGE_PENDING, PaymentStatus.PROCESSING)),
-        Map.entry(PaymentStatus.CHALLENGE_PENDING, Set.of(PaymentStatus.AUTHENTICATED, PaymentStatus.DECLINED, PaymentStatus.FAILED)),
-        Map.entry(PaymentStatus.AUTHENTICATED, Set.of(PaymentStatus.PROCESSING)),
-        Map.entry(PaymentStatus.PROCESSING, Set.of(PaymentStatus.COMPLETED, PaymentStatus.DECLINED, PaymentStatus.FAILED, PaymentStatus.UNKNOWN)),
-        Map.entry(PaymentStatus.UNKNOWN, Set.of(PaymentStatus.COMPLETED, PaymentStatus.DECLINED, PaymentStatus.FAILED))
+    private static final Map<PaymentStatus, java.util.Set<PaymentStatus>> VALID_TRANSITIONS = Map.ofEntries(
+        Map.entry(PaymentStatus.CREATED, java.util.Set.of(PaymentStatus.VALIDATED)),
+        Map.entry(PaymentStatus.VALIDATED, java.util.Set.of(PaymentStatus.CHALLENGE_PENDING, PaymentStatus.PROCESSING)),
+        Map.entry(PaymentStatus.CHALLENGE_PENDING, java.util.Set.of(PaymentStatus.AUTHENTICATED, PaymentStatus.DECLINED, PaymentStatus.FAILED)),
+        Map.entry(PaymentStatus.AUTHENTICATED, java.util.Set.of(PaymentStatus.PROCESSING)),
+        Map.entry(PaymentStatus.PROCESSING, java.util.Set.of(PaymentStatus.COMPLETED, PaymentStatus.DECLINED, PaymentStatus.FAILED, PaymentStatus.UNKNOWN)),
+        Map.entry(PaymentStatus.UNKNOWN, java.util.Set.of(PaymentStatus.COMPLETED, PaymentStatus.DECLINED, PaymentStatus.FAILED))
     );
     
     /**
@@ -57,7 +57,7 @@ public class StateTransitionValidator {
             return false;
         }
         
-        Set<PaymentStatus> allowedTransitions = VALID_TRANSITIONS.get(from);
+        java.util.Set<PaymentStatus> allowedTransitions = VALID_TRANSITIONS.get(from);
         return allowedTransitions != null && allowedTransitions.contains(to);
     }
     
@@ -76,3 +76,4 @@ public class StateTransitionValidator {
         }
     }
 }
+

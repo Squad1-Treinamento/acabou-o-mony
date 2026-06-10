@@ -26,10 +26,10 @@ public class PaymentRequestValidator {
     private static final Logger logger = LoggerFactory.getLogger(PaymentRequestValidator.class);
     
     // ISO 4217 currency codes (subset for this implementation)
-    private static final Set<String> VALID_CURRENCIES = Set.of(
+    private static final Set<String> VALID_CURRENCIES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
         "USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "CNY", "SEK", "NZD",
         "MXN", "SGD", "HKD", "NOK", "KRW", "TRY", "RUB", "INR", "BRL", "ZAR"
-    );
+    )));
     
     // Maximum amount: 1 billion cents = $10,000,000
     private static final long MAX_AMOUNT = 100_000_000_00L;
@@ -246,3 +246,4 @@ public class PaymentRequestValidator {
         return email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
     }
 }
+
