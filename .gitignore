@@ -1,3 +1,14 @@
+# Java build
+/target
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Eclipse
+*.classpath
+*.project
+
 # .claude
 .devcontainer/.env
 .claude/settings.local.json
@@ -6,6 +17,8 @@
 tasks/**
 debug-output/
 .playwright-cli/
+
+
 */__pycache__/
 **/target/
 
@@ -19,6 +32,10 @@ debug-output/
 # OS
 .DS_Store
 Thumbs.db
+
+# Sensitive config
+*.env
+application.properties
 
 # AI / local config
 .claude/
