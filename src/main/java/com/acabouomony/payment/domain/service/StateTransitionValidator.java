@@ -36,15 +36,18 @@ public class StateTransitionValidator {
     
     private static final Logger logger = LoggerFactory.getLogger(StateTransitionValidator.class);
     
-    private static final Map<PaymentStatus, java.util.Set<PaymentStatus>> VALID_TRANSITIONS = Map.ofEntries(
-        Map.entry(PaymentStatus.CREATED, java.util.Set.of(PaymentStatus.VALIDATED)),
-        Map.entry(PaymentStatus.VALIDATED, java.util.Set.of(PaymentStatus.CHALLENGE_PENDING, PaymentStatus.PROCESSING)),
-        Map.entry(PaymentStatus.CHALLENGE_PENDING, java.util.Set.of(PaymentStatus.AUTHENTICATED, PaymentStatus.DECLINED, PaymentStatus.FAILED)),
-        Map.entry(PaymentStatus.AUTHENTICATED, java.util.Set.of(PaymentStatus.PROCESSING)),
-        Map.entry(PaymentStatus.PROCESSING, java.util.Set.of(PaymentStatus.COMPLETED, PaymentStatus.DECLINED, PaymentStatus.FAILED, PaymentStatus.UNKNOWN)),
-        Map.entry(PaymentStatus.UNKNOWN, java.util.Set.of(PaymentStatus.COMPLETED, PaymentStatus.DECLINED, PaymentStatus.FAILED))
-    );
-    
+    private static final Map<PaymentStatus, Set<PaymentStatus>> VALID_TRANSITIONS;
+
+    static {
+        Map<PaymentStatus, Set<PaymentStatus>> map = new EnumMap<>(PaymentStatus.class);
+        map.put(PaymentStatus.CREATED, new HashSet<>(Collections.singletonList(PaymentStatus.VALIDATED)));
+        map.put(PaymentStatus.VALIDATED, new HashSet<>(Arrays.asList(PaymentStatus.CHALLENGE_PENDING, PaymentStatus.PROCESSING)));
+        map.put(PaymentStatus.CHALLENGE_PENDING, new HashSet<>(Arrays.asList(PaymentStatus.AUTHENTICATED, PaymentStatus.DECLINED, PaymentStatus.FAILED)));
+        map.put(PaymentStatus.AUTHENTICATED, new HashSet<>(Collections.singletonList(PaymentStatus.PROCESSING)));
+        map.put(PaymentStatus.PROCESSING, new HashSet<>(Arrays.asList(PaymentStatus.COMPLETED, PaymentStatus.DECLINED, PaymentStatus.FAILED, PaymentStatus.UNKNOWN)));
+        map.put(PaymentStatus.UNKNOWN, new HashSet<>(Arrays.asList(PaymentStatus.COMPLETED, PaymentStatus.DECLINED, PaymentStatus.FAILED)));
+        VALID_TRANSITIONS = Collections.unmodifiableMap(map);
+    }
     /**
      * Validates if transition is allowed.
      * 
@@ -57,7 +60,7 @@ public class StateTransitionValidator {
             return false;
         }
         
-        java.util.Set<PaymentStatus> allowedTransitions = VALID_TRANSITIONS.get(from);
+        Set<PaymentStatus> allowedTransitions = VALID_TRANSITIONS.get(from);
         return allowedTransitions != null && allowedTransitions.contains(to);
     }
     
