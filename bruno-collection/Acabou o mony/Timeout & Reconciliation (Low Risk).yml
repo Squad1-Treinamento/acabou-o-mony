@@ -1,0 +1,30 @@
+info:
+  name: Timeout & Reconciliation (Low Risk)
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/payments"
+  body:
+    type: json
+    data: |-
+      {
+        "amount": 10099,
+        "currency": "USD",
+        "idempotency_key": "{{$randomUUID}}",
+        "payment_method": {
+          "type": "CARD",
+          "masked_card": "411111XXXXXX1111",
+          "card_token_id": "paste-the-card-token-from-step-1-here"
+        }
+      }
+  auth:
+    type: bearer
+    token: "{{apiKey}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

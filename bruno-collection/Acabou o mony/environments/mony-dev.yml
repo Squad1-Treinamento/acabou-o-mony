@@ -1,0 +1,8 @@
+name: mony-dev
+variables:
+  - name: baseUrl
+    value: http://localhost:8080
+  - name: apiKey
+    value: teste_key
+  - name: transactionId
+    value: 6dce09c6-461d-4f8f-9bb1-df8b81869342
