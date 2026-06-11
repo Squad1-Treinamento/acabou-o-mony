@@ -5,6 +5,7 @@ import com.acabouomony.payment.domain.entity.Transaction;
 import com.acabouomony.payment.domain.exception.PaymentValidationException;
 import com.acabouomony.payment.domain.model.PaymentStatus;
 import com.acabouomony.payment.domain.service.*;
+import com.acabouomony.payment.domain.service.PaymentOrchestrationService;
 import com.acabouomony.payment.infrastructure.persistence.TransactionRepository;
 import com.acabouomony.payment.web.dto.PaymentResponseDTO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,7 +73,10 @@ public class PaymentController {
     
     @Autowired
     private TransactionRepository transactionRepository;
-    
+
+    @Autowired
+    private PaymentOrchestrationService orchestrationService;
+
     /**
      * Creates a new payment or returns cached response for duplicate.
      * 
@@ -194,9 +198,27 @@ public class PaymentController {
             try {
                 Transaction saved = transactionRepository.save(transaction);
                 logger.info("Transaction persisted: id={}, status={}", saved.getId(), saved.getStatus());
-                
+
+                // Step 5a: Run payment orchestration (mutates saved in place)
+                orchestrationService.processPayment(saved);
+                logger.info("Orchestration complete: id={}, status={}", saved.getId(), saved.getStatus());
+
                 // Build response for new transaction
-                ResponseEntity<PaymentResponseDTO> response = duplicatePaymentHandler.buildNewPaymentResponse(saved);
+                ResponseEntity<PaymentResponseDTO> response;
+                if (saved.getStatus() == PaymentStatus.CHALLENGE_PENDING) {
+                    PaymentResponseDTO dto = PaymentResponseDTO.builder()
+                            .transactionId(saved.getId())
+                            .status(saved.getStatus())
+                            .amount(saved.getAmount())
+                            .currency(saved.getCurrency())
+                            .createdAt(saved.getCreatedAt())
+                            .updatedAt(saved.getUpdatedAt())
+                            .idempotencyKey(saved.getIdempotencyKey())
+                            .build();
+                    response = ResponseEntity.accepted().body(dto);
+                } else {
+                    response = duplicatePaymentHandler.buildNewPaymentResponse(saved);
+                }
                 
                 // Cache the response
                 if (response.getBody() != null) {

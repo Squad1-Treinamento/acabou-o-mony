@@ -54,7 +54,10 @@ class PaymentOrchestrationServiceTest {
     
     @Mock
     private OutboxEventService outboxEventService;
-    
+
+    @Mock
+    private UnknownStateTransitionHandler unknownStateTransitionHandler;
+
     private PaymentOrchestrationService service;
     private UUID merchantId;
     private UUID transactionId;
@@ -68,7 +71,8 @@ class PaymentOrchestrationServiceTest {
             riskEvaluationService,
             stateTransitionValidator,
             auditLogService,
-            outboxEventService
+            outboxEventService,
+            unknownStateTransitionHandler
         );
         merchantId = UUID.randomUUID();
         transactionId = UUID.randomUUID();
