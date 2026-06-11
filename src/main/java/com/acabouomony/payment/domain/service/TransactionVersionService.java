@@ -9,8 +9,9 @@ import com.acabouomony.payment.infrastructure.persistence.OptimisticLockRetryHan
 import com.acabouomony.payment.infrastructure.persistence.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
@@ -19,136 +20,128 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * TransactionVersionService
- * 
- * Manages state transitions for transactions with optimistic locking and retry logic.
- * 
- * Responsibilities:
- * 1. Load transaction by ID
- * 2. Validate state transition using PaymentStateMachine
- * 3. Increment version number
- * 4. Persist transaction with version check
- * 5. Create audit log entry atomically
- * 6. Retry on optimistic lock conflicts (max 3 attempts)
- * 7. Log monitoring data
- * 
- * All database operations within a single @Transactional boundary
- * to ensure atomicity of transaction and audit log updates.
- */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class TransactionVersionService {
-    
+
     private final TransactionRepository transactionRepository;
     private final AuditLogRepository auditLogRepository;
     private final PaymentStateMachine paymentStateMachine;
-    
+    private final OutboxEventService outboxEventService;
+    private final TransactionVersionService self;
+
+    public TransactionVersionService(
+            TransactionRepository transactionRepository,
+            AuditLogRepository auditLogRepository,
+            PaymentStateMachine paymentStateMachine,
+            OutboxEventService outboxEventService,
+            @Lazy TransactionVersionService self) {
+        this.transactionRepository = transactionRepository;
+        this.auditLogRepository = auditLogRepository;
+        this.paymentStateMachine = paymentStateMachine;
+        this.outboxEventService = outboxEventService;
+        this.self = self;
+    }
+
     private static final int MAX_RETRY_ATTEMPTS = 3;
-    
+
     /**
      * Updates transaction state with optimistic locking and retry logic.
-     * 
-     * Process:
-     * 1. Load transaction from database
-     * 2. Validate transition using state machine
-     * 3. Increment version
-     * 4. Persist transaction
-     * 5. Create audit log atomically
-     * 6. Retry on version conflicts (max 3 attempts with backoff)
-     * 
-     * @param transactionId The transaction ID to update
-     * @param newStatus The desired new status
-     * @param actor The actor performing the transition (e.g., "system", "reconciliation")
-     * @throws OptimisticLockException if version conflicts after 3 retries
      */
     public void updateTransactionState(UUID transactionId, PaymentStatus newStatus, String actor) {
+        updateTransactionStateAndAcquirerRef(transactionId, newStatus, actor, null);
+    }
+
+    /**
+     * Updates transaction state and acquirer reference, used after acquirer response.
+     */
+    public void updateTransactionStateAndAcquirerRef(UUID transactionId, PaymentStatus newStatus, String actor, String acquirerReference) {
         OptimisticLockRetryHandler.executeWithRetry(
-            () -> performStateTransition(transactionId, newStatus, actor),
-            transactionId,
-            MAX_RETRY_ATTEMPTS
+                // CRITICAL FIX: Call the self-injected proxy to ensure a new transaction is started.
+                () -> self.performStateTransition(transactionId, newStatus, actor, acquirerReference),
+                transactionId,
+                MAX_RETRY_ATTEMPTS
         );
     }
-    
+
     /**
-     * Performs the actual state transition with database persistence.
-     * 
-     * This method is called within the retry loop and wrapped in a transaction.
-     * Any OptimisticLockException thrown by Hibernate will be caught by the retry handler.
-     * 
-     * @param transactionId The transaction ID
-     * @param newStatus The new status
-     * @param actor The actor performing the transition
-     * @return null (used for Supplier<Void> compatibility)
+     * Performs the actual state transition within a new, independent transaction.
+     * This prevents optimistic lock failures from marking the parent transaction for rollback.
      */
-    @Transactional
-    public Void performStateTransition(UUID transactionId, PaymentStatus newStatus, String actor) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Void performStateTransition(UUID transactionId, PaymentStatus newStatus, String actor, String acquirerReference) {
         // Load current transaction
         Transaction transaction = transactionRepository.findById(transactionId)
-            .orElseThrow(() -> new IllegalArgumentException("Transaction not found: " + transactionId));
-        
+                .orElseThrow(() -> new IllegalArgumentException("Transaction not found: " + transactionId));
+
         PaymentStatus currentStatus = transaction.getStatus();
         Integer currentVersion = transaction.getVersion();
-        
+
         // Validate transition
         paymentStateMachine.validateTransition(currentStatus, newStatus);
-        
-        // Update status and timestamp (JPA will auto-increment version)
+
+        // Update status and timestamp
         transaction.setStatus(newStatus);
         transaction.setUpdatedAt(Instant.now());
-        
-        // Persist transaction with version check (optimistic locking)
-        // If version conflict, org.springframework.orm.ObjectOptimisticLockingFailureException is thrown
-        transactionRepository.save(transaction);
-        
-        // Create audit log in same transaction (atomicity guaranteed)
-        createAuditLog(transaction, currentStatus, newStatus, actor);
-        
-        log.info("Transaction {} transitioned from {} to {} (version {} -> {})", 
-            transactionId, currentStatus, newStatus, currentVersion, currentVersion + 1);
-        
+
+        // Optionally update the acquirer reference
+        if (acquirerReference != null) {
+            transaction.setAcquirerReference(acquirerReference);
+        }
+
+        // Persist transaction with version check
+        Transaction savedTransaction = transactionRepository.save(transaction);
+
+        // Create audit log in same transaction
+        createAuditLog(savedTransaction, currentStatus, newStatus, actor);
+
+        // Create outbox event for terminal states
+        createOutboxEventForStatus(savedTransaction, newStatus);
+
+        log.info("Transaction {} transitioned from {} to {} (version {} -> {})",
+                transactionId, currentStatus, newStatus, currentVersion, savedTransaction.getVersion());
+
         return null;
     }
-    
+
+    private void createOutboxEventForStatus(Transaction transaction, PaymentStatus status) {
+        switch (status) {
+            case COMPLETED:
+                outboxEventService.createPaymentCompletedEvent(transaction);
+                break;
+            case DECLINED:
+                outboxEventService.createPaymentDeclinedEvent(transaction);
+                break;
+            case FAILED:
+                outboxEventService.createPaymentFailedEvent(transaction);
+                break;
+            default:
+                // No event for intermediate states
+                break;
+        }
+    }
+
     /**
      * Creates an audit log entry for the state transition.
-     * 
-     * Checksum is computed to detect tampering (integrity verification).
-     * Audit log is persisted in the same transaction as the transaction update.
-     * 
-     * @param transaction The transaction being updated
-     * @param oldStatus Previous status
-     * @param newStatus New status
-     * @param actor Who performed the transition
      */
     private void createAuditLog(Transaction transaction, PaymentStatus oldStatus, PaymentStatus newStatus, String actor) {
         String checksum = computeChecksum(transaction.getId().toString(), oldStatus.toString(), newStatus.toString(), actor);
-        
+
         AuditLog auditLog = AuditLog.builder()
-            .id(UUID.randomUUID())
-            .transaction(transaction)
-            .oldStatus(oldStatus)
-            .newStatus(newStatus)
-            .actor(actor)
-            .checksum(checksum)
-            .createdAt(Instant.now())
-            .build();
-        
+                .id(UUID.randomUUID())
+                .transaction(transaction)
+                .oldStatus(oldStatus)
+                .newStatus(newStatus)
+                .actor(actor)
+                .checksum(checksum)
+                .createdAt(Instant.now())
+                .build();
+
         auditLogRepository.save(auditLog);
     }
-    
+
     /**
      * Computes SHA256 checksum for audit log integrity.
-     * 
-     * Prevents tampering by making it computationally difficult to forge
-     * an audit entry with a matching checksum.
-     * 
-     * @param transactionId Transaction ID
-     * @param oldStatus Old status
-     * @param newStatus New status
-     * @param actor Actor name
-     * @return Hex-encoded SHA256 hash
      */
     private String computeChecksum(String transactionId, String oldStatus, String newStatus, String actor) {
         try {
@@ -160,12 +153,9 @@ public class TransactionVersionService {
             throw new RuntimeException("SHA-256 algorithm not available", e);
         }
     }
-    
+
     /**
      * Converts byte array to hex string.
-     * 
-     * @param bytes Byte array
-     * @return Hex string representation
      */
     private String bytesToHex(byte[] bytes) {
         StringBuilder hexString = new StringBuilder();

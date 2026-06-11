@@ -45,10 +45,12 @@ public class OutboxEventService {
     
     private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper;
+    private final SignatureService signatureService;
     
-    public OutboxEventService(OutboxEventRepository outboxEventRepository, ObjectMapper objectMapper) {
+    public OutboxEventService(OutboxEventRepository outboxEventRepository, ObjectMapper objectMapper, SignatureService signatureService) {
         this.outboxEventRepository = outboxEventRepository;
         this.objectMapper = objectMapper;
+        this.signatureService = signatureService;
     }
     
     /**
@@ -149,6 +151,9 @@ public class OutboxEventService {
             // Serialize payload to JSON
             String payloadJson = objectMapper.writeValueAsString(payload);
             
+            // Generate the signature from the JSON payload
+            String signature = signatureService.sign(payloadJson);
+
             // Create outbox event
             OutboxEvent event = OutboxEvent.builder()
                 .id(UUID.randomUUID())
@@ -159,6 +164,7 @@ public class OutboxEventService {
                 .retryCount(0)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
+                .signature(signature)
                 .build();
             
             // Persist to database (within current transaction)
@@ -197,3 +203,4 @@ public class OutboxEventService {
         return payload;
     }
 }
+

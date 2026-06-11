@@ -41,6 +41,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
      */
     Optional<Transaction> findByMerchantIdAndIdempotencyKey(UUID merchantId, UUID idempotencyKey);
     
+    Optional<Transaction> findByIdempotencyKeyAndMerchantId(UUID idempotencyKey, UUID merchantId);
+
     /**
      * Finds all transactions for a specific merchant.
      * 
@@ -134,5 +136,14 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
         @Param("merchantId") UUID merchantId,
         @Param("createdAfter") Instant createdAfter
     );
+
+    /**
+     * Checks if a transaction exists for a specific card token and merchant.
+     * Used by NewCardRiskRule to determine if a card has been seen before, regardless of status.
+     * This is more accurate than checking only for completed transactions.
+     */
+    boolean existsByCardTokenIdAndMerchantId(String cardTokenId, UUID merchantId);
+
+    boolean existsByCardTokenIdAndMerchantIdAndIdNot(String cardTokenId, UUID merchantId, UUID id);
 }
 

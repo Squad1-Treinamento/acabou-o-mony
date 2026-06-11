@@ -31,10 +31,9 @@ import java.util.UUID;
 public interface MerchantRepository extends JpaRepository<Merchant, UUID> {
     
     /**
-     * Finds a merchant by their merchant ID.
-     * 
-     * @param merchantId The unique merchant identifier
-     * @return Optional containing the merchant if found
+     * Finds a merchant by their public-facing business identifier (merchant_id).
+     * This is used to look up merchants based on the ID stored in transactions.
      */
     Optional<Merchant> findByMerchantId(UUID merchantId);
 }
+

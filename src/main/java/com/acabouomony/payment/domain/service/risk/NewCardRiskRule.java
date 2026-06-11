@@ -2,8 +2,8 @@ package com.acabouomony.payment.domain.service.risk;
 
 import com.acabouomony.payment.domain.entity.Transaction;
 import com.acabouomony.payment.infrastructure.persistence.TransactionRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 /**
  * Risk rule: Card is new (not previously used).
@@ -19,60 +19,25 @@ import org.slf4j.LoggerFactory;
  * - New cards are more likely to be fraudulent
  * - Requires database lookup to check card history
  */
+@Service
+@RequiredArgsConstructor
 public class NewCardRiskRule implements RiskRule {
     
-    private static final Logger logger = LoggerFactory.getLogger(NewCardRiskRule.class);
-    
     private final TransactionRepository transactionRepository;
-    
+
     /**
-     * Creates new card risk rule.
-     * 
-     * @param transactionRepository Repository for card history lookup
+     * A transaction is high-risk if it's the first time we've seen this card.
+     * This is determined by checking if any *other* transactions exist for this card.
      */
-    public NewCardRiskRule(TransactionRepository transactionRepository) {
-        this.transactionRepository = transactionRepository;
-    }
-    
     @Override
     public boolean isHighRisk(Transaction transaction) {
-        if (transaction == null) {
-            logger.warn("Cannot evaluate new card risk for null transaction");
-            return true;  // Default to high-risk for safety
-        }
-        
-        // If no card token, treat as new card (high-risk)
-        String cardTokenId = transaction.getCardTokenId();
-        if (cardTokenId == null || cardTokenId.isEmpty()) {
-            logger.debug("HIGH-RISK: No card token: transaction_id={}", transaction.getId());
-            return true;
-        }
-        
-        // Check if card has been used before
-        try {
-            long previousTransactionCount = transactionRepository.countByCardTokenIdAndMerchantIdAndStatusCompleted(
-                cardTokenId,
-                transaction.getMerchantId()
-            );
-            
-            if (previousTransactionCount == 0) {
-                logger.debug("HIGH-RISK: New card (no previous transactions): transaction_id={}, card_token_id={}",
-                    transaction.getId(), cardTokenId);
-                return true;
-            }
-            
-            logger.debug("LOW-RISK: Card has previous transactions: transaction_id={}, card_token_id={}, count={}",
-                transaction.getId(), cardTokenId, previousTransactionCount);
-            return false;
-            
-        } catch (Exception e) {
-            logger.error("Error checking card history: transaction_id={}, error={}",
-                transaction.getId(), e.getMessage(), e);
-            // Default to high-risk on error for safety
-            return true;
-        }
+        return !transactionRepository.existsByCardTokenIdAndMerchantIdAndIdNot(
+            transaction.getCardTokenId(),
+            transaction.getMerchantId(),
+            transaction.getId()
+        );
     }
-    
+
     @Override
     public String getName() {
         return "NewCardRiskRule";

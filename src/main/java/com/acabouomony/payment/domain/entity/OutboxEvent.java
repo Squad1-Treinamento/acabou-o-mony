@@ -76,4 +76,9 @@ public class OutboxEvent {
 
     @Column(name = "delivered_at")
     private Instant deliveredAt;
+
+    @NotNull(message = "signature cannot be null")
+    @Column(nullable = false)
+    private String signature;
 }
+
