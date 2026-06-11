@@ -17,7 +17,6 @@ As a user of the "Acabou o Mony" card, I want to execute credit and debit transa
 
 ## Scope
 - In scope: process credit and debit transactions and return immediate confirmation.
-- Out of scope: refunds/chargebacks, fraud detection logic, settlement reconciliation.
 
 ## Acceptance Criteria (BDD)
 - Given I initiate a transaction, when it is processed, then it completes in under 1 second.
