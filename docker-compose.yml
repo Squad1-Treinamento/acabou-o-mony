@@ -55,6 +55,67 @@ services:
   #   networks:
   #     - edge-net
 
+  # Redis Standalone for Cache and Idempotency Layer
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - acabou-o-mony-network
+  
+  # 3DS / MFA Auth Engine
+  3ds-engine:
+    build: ./3ds-engine
+    container_name: 3ds-engine
+    ports:
+      - "8081:8080"
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-redis}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - SPRING_DATA_REDIS_DATABASE=${REDIS_DATABASE:-0}
+      - SPRING_DATA_REDIS_TIMEOUT=${REDIS_TIMEOUT_MS:-5000}ms
+    networks:
+      - acabou-o-mony-network
+      - edge-net
+  
+  # Core Payment Service (to be implemented)
+  # core-service:
+  #   build: ./core-service
+  #   container_name: core-service
+  #   ports:
+  #     - "8082:8080"
+  #   depends_on:
+  #     redis:
+  #       condition: service_healthy
+  #   environment:
+  #     - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-redis}
+  #     - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
+  #     - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+  #     - CACHE_ENABLED=${CACHE_ENABLED:-true}
+  #     - CACHE_FALLBACK_TO_DB_ON_ERROR=${CACHE_FALLBACK_TO_DB_ON_ERROR:-true}
+  #   networks:
+  #     - acabou-o-mony-network
+  #     - edge-net
+
+volumes:
+  redis-data:
+    driver: local
+
 networks:
   edge-net:
+    driver: bridge
+  acabou-o-mony-network:
     driver: bridge
