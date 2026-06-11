@@ -1,0 +1,38 @@
+limit_req_zone $binary_remote_addr zone=req_limit:10m rate=${RATE_LIMIT};
+
+upstream backend_api {
+  ${UPSTREAM_SERVERS}
+}
+
+server {
+  listen 80;
+
+  access_log /var/log/nginx/access.log;
+  error_log /var/log/nginx/error.log;
+
+  client_max_body_size 2m;
+
+  location = /healthz {
+    add_header Content-Type text/plain;
+    return 200 'ok';
+  }
+
+    location / {
+    limit_req zone=req_limit burst=${RATE_BURST} nodelay;
+
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host $host;
+
+    proxy_connect_timeout 5s;
+    proxy_read_timeout 60s;
+    proxy_send_timeout 60s;
+
+    # DEBUG HEADER: Controlled by ENVIRONMENT variable
+    # Enabled in development, disabled in production/staging
+    ${DEBUG_HEADER}
+
+    proxy_pass http://backend_api;
+  }
+}

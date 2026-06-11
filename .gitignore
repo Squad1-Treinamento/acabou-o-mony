@@ -9,6 +9,26 @@
 *.classpath
 *.project
 
+# .claude
+.devcontainer/.env
+.claude/settings.local.json
+.claude/auth.local.md
+.claude-worktrees/
+tasks/**
+debug-output/
+.playwright-cli/
+
+
+*/__pycache__/
+**/target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
 # OS
 .DS_Store
 Thumbs.db
@@ -16,3 +36,16 @@ Thumbs.db
 # Sensitive config
 *.env
 application.properties
+
+# AI / local config
+.claude/
+
+# Generated reports
+qa-output/**
+
+# Maven wrapper binary
+.mvn/wrapper/maven-wrapper.jar
+
+# Environment files
+.env
+.env.local
