@@ -23,48 +23,106 @@ This system is a modern, event-driven payment processing core built with enterpr
 
 ### Step 1: Start the PostgreSQL Database
 
-The system uses PostgreSQL for data persistence and Flyway for database migrations. The easiest way to get a database running is with Docker.
-
-1.  Create a `docker-compose.yml` file in your project's root directory:
-
-    ```yaml
-    version: '3.8'
-    services:
-      postgres:
-        image: postgres:15
-        container_name: payment-core-db
-        environment:
-          POSTGRES_USER: paymentuser
-          POSTGRES_PASSWORD: paymentpassword
-          POSTGRES_DB: paymentdb
-        ports:
-          - "5432:5432"
-        volumes:
-          - postgres_data:/var/lib/postgresql/data
-
-    volumes:
-      postgres_data:
-    ```
-
-2.  Run the database from your terminal:
-    ```bash
-    docker-compose up -d
-    ```
+The system uses PostgreSQL for data persistence and Flyway for database migrations. The easiest way to get a database running is with Docker. Run ```docker compose up``` on the project root so the database can start
 
 ### Step 2: Configure the Application
 
-Update your application's configuration file (e.g., `src/main/resources/application.properties` or `application.yml`) to connect to the database.
+Update your application's configuration file (e.g., `src/main/resources/application.properties`) to connect to the database.
 
 ```properties
 # src/main/resources/application.properties
 
-# Database Connection
-spring.datasource.url=jdbc:postgresql://localhost:5432/paymentdb
-spring.datasource.username=paymentuser
-spring.datasource.password=paymentpassword
+# ----------------------------------------
+# DATABASE (POSTGRESQL)
+# ----------------------------------------
+# These should match the values in your docker-compose.yml
+spring.datasource.url=jdbc:postgresql://localhost:5433/payment-service
+spring.datasource.username=YOUR_USERNAME
+spring.datasource.password=YOUR_PASSWORD
+spring.jpa.show-sql=false
 
-# JPA/Hibernate Configuration
-spring.jpa.hibernate.ddl-auto=validate # Flyway manages the schema
+# JPA/Hibernate settings
+spring.jpa.hibernate.ddl-auto=validate
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+
+# ----------------------------------------
+# CACHE (REDIS) - ainda nao aplicado, apenas existe aqui
+# ----------------------------------------
+# These should match the values in your docker-compose.yml
+spring.data.redis.host=localhost
+spring.data.redis.port=6379
+
+# ----------------------------------------
+# APPLICATION & WEB SERVER
+# ----------------------------------------
+server.port=8080
+
+# Enable virtual threads for high concurrency
+spring.threads.virtual.enabled=true
+
+# Request timeout settings
+spring.mvc.async.request-timeout=60000
+
+# ----------------------------------------
+# EXTERNAL SERVICES (MERCADO PAGO MOCK) - ainda nao aplicado
+# ----------------------------------------
+# URL for the payment acquirer (e.g., Mercado Pago)
+# For local testing, this might point to a mock server like WireMock.
+acquirer.mercado-pago.api.url=http://localhost:9090/v1/payments
+acquirer.mercado-pago.api.token=YOUR_MERCADO_PAGO_TEST_TOKEN
+
+# ----------------------------------------
+# SECURITY - ainda nao aplicado
+# ----------------------------------------
+# Secret key for signing 3DS JWTs
+security.jwt.secret=your-super-secret-key-for-jwt-signing-that-is-at-least-256-bits-long
+# Secret key for signing merchant webhooks (HMAC-SHA256)
+security.merchant.webhook-secret=your-super-secret-key-for-signing-webhooks
+
+# Webhook Dispatch Worker Configuration
+
+# Webhook secret key prefix
+webhook.secret-key-prefix=webhook_secret_
+
+# HTTP timeout for webhook requests (milliseconds)
+webhook.http-timeout-ms=5000
+
+# Polling interval (milliseconds)
+webhook.polling-interval-ms=100
+
+# SLA monitoring interval (milliseconds)
+webhook.sla-monitor-interval-ms=30000
+
+# SLA threshold (minutes)
+webhook.sla-threshold-minutes=5
+
+# Batch size per poll
+# Maximum number of events to process per poll
+webhook.batch-size=100
+
+# Maximum retry attempts
+webhook.max-retries=5
+
+# Retry backoff delays (milliseconds)
+# Exponential backoff delays between retry attempts
+webhook.retry-backoff-delays=1000,2000,4000,8000,16000
+
+# Enable webhook dispatch worker
+# Set to false to disable webhook dispatch (for testing)
+webhook.dispatch.enabled=true
+
+# Enable SLA monitoring
+# Set to false to disable SLA monitoring (for testing)
+webhook.sla-monitor.enabled=true
+
+# Logging level for webhook dispatch
+# DEBUG: Verbose logging for troubleshooting
+# INFO: Standard logging
+# WARN: Only warnings and errors
+logging.level.com.acabouomony.payment.domain.service.WebhookDispatchService=INFO
+logging.level.com.acabouomony.payment.infrastructure.worker.WebhookDispatchWorker=INFO
+logging.level.com.acabouomony.payment.domain.service.WebhookSignatureService=INFO
+
 ```
 
 ---
@@ -81,11 +139,6 @@ mvn clean package
 
 ### Step 2: Run the Application
 
-Execute the JAR file. On startup, Flyway will automatically run the database migrations (`V1__...`, `V2__...`, etc.) to create all the necessary tables and constraints.
-
-```bash
-java -jar target/payment-core-0.0.1-SNAPSHOT.jar
-```
 You should see Spring Boot startup logs, including messages from Flyway indicating successful migrations.
 
 ### Step 3: Create a Merchant and API Key
@@ -94,34 +147,17 @@ Merchant API keys are hashed with Argon2 and stored in the `merchants` table. Yo
 
 #### How to Generate an API Key Hash
 
-You can use a simple Java utility or a dedicated script to generate a secure hash. Here is a conceptual example using Spring Security's `Argon2PasswordEncoder`:
-
-```java
-import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
-
-public class ApiKeyGenerator {
-    public static void main(String[] args) {
-        // Use secure defaults from the spec
-        Argon2PasswordEncoder encoder = new Argon2PasswordEncoder(16, 32, 1, 65536, 3);
-
-        String plainTextApiKey = "my-secret-api-key"; // Choose your secret key
-        String hash = encoder.encode(plainTextApiKey);
-
-        System.out.println("Plaintext API Key: " + plainTextApiKey);
-        System.out.println("Hashed API Key: " + hash);
-    }
-}
-```
+Generate a new API key Hash by using the file "Argon2KeyGenerator.java" in the test package, there you can provide a plain text and it will be converted:
 
 #### Inserting the Merchant Record
 
 Now, use the generated hash to insert a merchant record into your database. The `INSERT` statement below is a ready-to-use example.
 
-*   **Plaintext API Key for this example:** `my-secret-api-key`
-*   **Webhook URL:** The URL `https://webhook.site/...` is a great tool for testing. It will capture any webhooks sent by the application for this merchant.
+*   **Plaintext API Key for this example:** `teste-key`
+*   **Webhook URL:** The URL `https://webhook.site/...` is a great tool for testing. It will capture any webhooks sent by the application for this merchant. GET THIS FROM 'https://webhook.site/#!/view/851873e9-cba1-42cc-be81-1392527b1300'
 
 ```sql
--- This record uses 'my-secret-api-key' as the plaintext API key.
+-- This record uses 'teste-key' as the plaintext API key.
 INSERT INTO merchants (id, merchant_id, api_key_hash, webhook_url, created_at)
 VALUES (
     'f47ac10b-58cc-4372-a567-0e02b2c3d479',
@@ -138,10 +174,10 @@ Your system is now running and ready for testing.
 
 ## 4. Testing the API
 
-Use `curl` or Postman to interact with the payment API.
+Use `curl` or Postman or Bruno to interact with the payment API.
 
 **API Endpoint:** `POST /api/v1/payments`
-**Authentication:** `Authorization: Bearer my-secret-api-key`
+**Authentication:** `Authorization: Bearer teste-key`
 
 ### Scenario 1: Successful Payment Request (Happy Path)
 
@@ -150,7 +186,7 @@ This is a new, valid request.
 ```bash
 curl -X POST http://localhost:8080/api/v1/payments \
 -H "Content-Type: application/json" \
--H "Authorization: Bearer my-secret-api-key" \
+-H "Authorization: Bearer teste-key" \
 -d '{
     "amount": 10000,
     "currency": "BRL",
@@ -185,7 +221,7 @@ Send a request with the same `idempotency_key` as before, but change the `amount
 # Same idempotency_key, different amount
 curl -X POST http://localhost:8080/api/v1/payments \
 -H "Content-Type: application/json" \
--H "Authorization: Bearer my-secret-api-key" \
+-H "Authorization: Bearer teste-key" \
 -d '{
     "amount": 5000,
     "currency": "BRL",
@@ -209,7 +245,7 @@ Send a request with an invalid currency code (the spec implies only `BRL` is sup
 # Invalid currency "USD"
 curl -X POST http://localhost:8080/api/v1/payments \
 -H "Content-Type: application/json" \
--H "Authorization: Bearer my-secret-api-key" \
+-H "Authorization: Bearer teste-key" \
 -d '{
     "amount": 10000,
     "currency": "USD",
