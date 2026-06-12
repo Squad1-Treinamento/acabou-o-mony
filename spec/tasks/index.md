@@ -85,10 +85,6 @@ grouped by feature branch (`tasks/<branch>/`).
 
 ### Not Started Tasks
 
-- **task-008-redis-idempotency-coordination.md** — Redis-based idempotency coordination
-  - Status: ⏳ NOT STARTED
-  - Description: Fast-path idempotency checks with Redis caching and TTL management
-
 - **task-017-webhook-dispatch-worker.md** — Webhook dispatch worker
   - Status: ⏳ NOT STARTED
   - Description: Background worker for reliable delivery and retry of outgoing webhooks
@@ -100,6 +96,27 @@ grouped by feature branch (`tasks/<branch>/`).
 - **task-019-structured-audit-logging.md** — Structured audit logging
   - Status: ⏳ NOT STARTED
   - Description: Structured audit logging with masking and tamper-detection checksums
+
+## Cache e Idempotency Layer com Redis Tasks
+
+Tasks in `spec/tasks/cache-idempotency-redis/`:
+
+- **task-001-add-cache-maven-dependencies.md** — Add cache Maven dependencies to Core Service
+- **task-002-configure-redis-application-yml.md** — Configure Redis connection in application.yml
+- **task-003-implement-redis-config.md** — Implement RedisConfig + RedisPaymentResponseCache
+- **task-004-implement-merchant-service-cache.md** — MerchantService cache (fase futura, placeholder)
+- **task-005-implement-risk-and-bin-cache.md** — Risk and BIN cache (fase futura, placeholder)
+- **task-006-implement-circuit-breaker.md** — Circuit breaker configuration via Resilience4j
+- **task-007-implement-idempotency-service.md** — Add Redis fast-path to IdempotencyService
+- **task-008-implement-idempotency-interceptor.md** — Wire Redis cache in DuplicateRequestRecoveryService
+- **task-009-apply-idempotency-to-endpoints.md** — Apply idempotency interceptor to endpoints
+- **task-010-create-integration-tests-cache.md** — Integration tests for cache layer (Testcontainers)
+- **task-011-create-integration-tests-idempotency.md** — Integration tests for idempotency layer
+- **task-013-implement-aes-encryptor.md** — AESEncryptor infrastructure (preparação, não usado no MVP)
+- **task-014-configure-encryption-validation.md** — Encryption key validation on startup
+- **task-015-document-cache-encryption.md** — Cache encryption documentation
+
+**Note:** task-012 (Bouncy Castle dependency) foi removido — `bcprov-jdk18on` já está no `pom.xml`.
 
 ## Auth Engine Core Tasks
 

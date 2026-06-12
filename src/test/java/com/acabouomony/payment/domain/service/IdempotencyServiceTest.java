@@ -42,12 +42,15 @@ class IdempotencyServiceTest {
     @Mock
     private PayloadHashingService payloadHashingService;
     
+    @Mock
+    private PaymentResponseCache responseCache;
+    
     private IdempotencyService service;
     
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        service = new IdempotencyService(transactionRepository, payloadHashingService);
+        service = new IdempotencyService(transactionRepository, payloadHashingService, responseCache);
     }
     
     @Nested
