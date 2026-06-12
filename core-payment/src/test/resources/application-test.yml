@@ -50,3 +50,6 @@ mercado-pago:
 3ds:
   base-url: http://localhost:9999
   api-key: test-api-key
+
+cache:
+  backend: in-memory
