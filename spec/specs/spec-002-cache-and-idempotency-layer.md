@@ -24,7 +24,10 @@ O gateway de pagamento "Acabou o Mony" precisa otimizar a performance e garantir
 - ✅ Especificação de dados cacheáveis e não-cacheáveis
 - ✅ Definição de estratégia de idempotência
 - ✅ Implementação de circuit breaker e fallback
-- ❌ Implementação de código Java (será feita em fase posterior)
+- ✅ Cache de respostas de pagamento via Redis (RedisPaymentResponseCache)
+- ✅ Fast-path de idempotência via Redis (consulta antes do PostgreSQL)
+- ❌ Cache de Merchant Configuration, Risk Thresholds, BIN Lookup (fase futura)
+- ❌ Criptografia AES-256-GCM ativa (infraestrutura preparada, não usada no MVP)
 - ❌ Migração de dados existentes (não aplicável no MVP)
 
 ## Functional Requirements (Behavior)
@@ -466,6 +469,75 @@ And os health checks devem passar
 And a aplicação deve conectar ao Redis
 ```
 
+### AC-11: Cache de Respostas via Redis (P0 - Crítico)
+
+**AC-11.1: RedisPaymentResponseCache Armazena e Recupera**
+```gherkin
+Given o Redis está operacional
+And a chave "core:idempotency:m_123:req_abc123" existe no Redis
+When recupero a resposta de pagamento via cache
+Then o RedisPaymentResponseCache deve retornar a resposta cacheada
+And a latência deve ser < 10ms
+```
+
+**AC-11.2: Cache Miss com Fallback para InMemory**
+```gherkin
+Given o Redis está operacional
+And a chave "core:idempotency:m_123:req_abc123" NÃO existe no Redis
+When recupero a resposta de pagamento via cache
+Then o RedisPaymentResponseCache deve retornar Optional.empty()
+And o InMemoryPaymentResponseCache NÃO deve ser consultado
+```
+
+**AC-11.3: Redis Indisponível com Fallback Silencioso**
+```gherkin
+Given o Redis está indisponível (container parado)
+When armazeno uma resposta de pagamento no cache
+Then o InMemoryPaymentResponseCache deve ser usado como fallback
+And a aplicação não deve lançar exceção
+And o log deve conter "WARN" (não "ERROR")
+```
+
+**AC-11.4: Chave Redis com Namespace Correto**
+```gherkin
+Given uma resposta de pagamento para merchant "m_123" com idempotency_key "req_abc123"
+When a resposta é cacheada no Redis
+Then a chave Redis deve ser "core:idempotency:m_123:req_abc123"
+And o TTL deve ser 24 horas (86400 segundos)
+```
+
+### AC-12: Fast-path de Idempotência via Redis (P0 - Crítico)
+
+**AC-12.1: Primeira Requisição com Cache Miss**
+```gherkin
+Given não existe transação com Idempotency-Key "req_abc123"
+And a chave "core:idempotency:m_123:req_abc123" NÃO existe no Redis
+When envio POST /api/v1/payments com Idempotency-Key "req_abc123"
+Then o IdempotencyService deve verificar o Redis primeiro (fast-path)
+And deve retornar cache miss (Optional.empty())
+And deve cair no slow-path PostgreSQL
+```
+
+**AC-12.2: Requisição Duplicada com Cache Hit**
+```gherkin
+Given existe transação aprovada com Idempotency-Key "req_abc123"
+And a chave "core:idempotency:m_123:req_abc123" existe no Redis
+When envio POST /api/v1/payments com Idempotency-Key "req_abc123" novamente
+Then o IdempotencyService deve retornar do Redis sem consultar PostgreSQL
+And o DuplicateRequestRecoveryService deve usar o cache hit
+And o header "X-Idempotent-Replayed" deve ser "true"
+```
+
+**AC-12.3: Redis Indisponível com Degradação Silenciosa**
+```gherkin
+Given o Redis está indisponível
+When envio POST /api/v1/payments com Idempotency-Key "req_abc123"
+Then o IdempotencyService deve ignorar o erro do Redis
+And deve cair no slow-path PostgreSQL
+And a requisição deve ser processada normalmente (HTTP 200)
+And o log deve conter "WARN" com "circuit breaker OPEN"
+```
+
 ### AC-10: Criptografia (Preparação) (P2 - Desejável)
 
 **AC-10.1: Classe AESEncryptor Existe**
@@ -505,7 +577,7 @@ And nenhum dado deve ser criptografado no cache
 
 ## Out of Scope
 
-- ❌ Implementação de código Java (será feita em fase posterior)
+- ❌ Cache de Merchant Configuration, Risk Thresholds, BIN Lookup (anotações Spring Cache em fase futura)
 - ❌ Redis Cluster (usar standalone no MVP)
 - ❌ Replicação Redis (master-slave)
 - ❌ Protobuf para serialização (usar JSON no MVP)
@@ -513,6 +585,7 @@ And nenhum dado deve ser criptografado no cache
 - ❌ Métricas de observabilidade (Prometheus, Grafana)
 - ❌ Migração de dados existentes (não aplicável no MVP)
 - ❌ Cache de dados sensíveis (sempre buscar do banco/KMS)
+- ❌ Criptografia AES-256-GCM ativa (infraestrutura preparada, não usada no MVP)
 
 ## Dependencies
 
