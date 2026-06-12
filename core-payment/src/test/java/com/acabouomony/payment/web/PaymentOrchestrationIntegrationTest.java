@@ -56,9 +56,9 @@ class PaymentOrchestrationIntegrationTest {
     void setUp() {
         merchantId = UUID.randomUUID();
         transactionId = UUID.randomUUID();
-        transactionRepository.deleteAll();
         auditLogRepository.deleteAll();
         outboxEventRepository.deleteAll();
+        transactionRepository.deleteAll();
     }
     
     @Nested

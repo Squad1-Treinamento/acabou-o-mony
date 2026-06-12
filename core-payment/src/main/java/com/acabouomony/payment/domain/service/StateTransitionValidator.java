@@ -19,6 +19,7 @@ import java.util.*;
  * - CREATED -> VALIDATED
  * - VALIDATED -> CHALLENGE_PENDING (high-risk)
  * - VALIDATED -> PROCESSING (low-risk)
+ * - VALIDATED -> UNKNOWN (3DS/acquirer error before processing)
  * - CHALLENGE_PENDING -> AUTHENTICATED
  * - CHALLENGE_PENDING -> DECLINED
  * - CHALLENGE_PENDING -> FAILED
@@ -38,7 +39,7 @@ public class StateTransitionValidator {
     
     private static final Map<PaymentStatus, java.util.Set<PaymentStatus>> VALID_TRANSITIONS = Map.ofEntries(
         Map.entry(PaymentStatus.CREATED, java.util.Set.of(PaymentStatus.VALIDATED)),
-        Map.entry(PaymentStatus.VALIDATED, java.util.Set.of(PaymentStatus.CHALLENGE_PENDING, PaymentStatus.PROCESSING)),
+        Map.entry(PaymentStatus.VALIDATED, java.util.Set.of(PaymentStatus.CHALLENGE_PENDING, PaymentStatus.PROCESSING, PaymentStatus.UNKNOWN)),
         Map.entry(PaymentStatus.CHALLENGE_PENDING, java.util.Set.of(PaymentStatus.AUTHENTICATED, PaymentStatus.DECLINED, PaymentStatus.FAILED)),
         Map.entry(PaymentStatus.AUTHENTICATED, java.util.Set.of(PaymentStatus.PROCESSING)),
         Map.entry(PaymentStatus.PROCESSING, java.util.Set.of(PaymentStatus.COMPLETED, PaymentStatus.DECLINED, PaymentStatus.FAILED, PaymentStatus.UNKNOWN)),

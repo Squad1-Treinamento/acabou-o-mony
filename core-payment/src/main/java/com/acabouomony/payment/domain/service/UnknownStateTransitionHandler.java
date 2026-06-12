@@ -131,11 +131,11 @@ public class UnknownStateTransitionHandler {
             try {
                 // Update transaction state
                 transaction.setStatus(newStatus);
-                transaction.setVersion(transaction.getVersion() + 1);
                 transaction.setUpdatedAt(Instant.now());
                 
                 // Persist transaction (version conflict checked here)
                 transactionRepository.save(transaction);
+                transaction.setVersion(transaction.getVersion() + 1);
                 
                 // Create audit log entry (same transaction)
                 auditLogService.logStateTransition(transaction, oldStatus, newStatus, "system");
