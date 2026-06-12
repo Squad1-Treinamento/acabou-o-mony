@@ -1,6 +1,7 @@
 package com.acabouomony.payment.domain.service;
 
 import com.acabouomony.payment.web.dto.PaymentResponseDTO;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * - No external dependencies
  */
 @Component
+@ConditionalOnProperty(name = "cache.backend", havingValue = "in-memory", matchIfMissing = true)
 public class InMemoryPaymentResponseCache implements PaymentResponseCache {
     
     private static final Logger logger = LoggerFactory.getLogger(InMemoryPaymentResponseCache.class);

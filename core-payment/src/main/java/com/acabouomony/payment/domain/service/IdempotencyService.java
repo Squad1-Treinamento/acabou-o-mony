@@ -5,6 +5,7 @@ import com.acabouomony.payment.domain.entity.Transaction;
 import com.acabouomony.payment.domain.exception.PaymentValidationException;
 import com.acabouomony.payment.domain.model.PaymentStatus;
 import com.acabouomony.payment.infrastructure.persistence.TransactionRepository;
+import com.acabouomony.payment.web.dto.PaymentResponseDTO;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,12 +37,15 @@ public class IdempotencyService {
     
     private final TransactionRepository transactionRepository;
     private final PayloadHashingService payloadHashingService;
+    private final PaymentResponseCache responseCache;
     
     public IdempotencyService(
             TransactionRepository transactionRepository,
-            PayloadHashingService payloadHashingService) {
+            PayloadHashingService payloadHashingService,
+            PaymentResponseCache responseCache) {
         this.transactionRepository = transactionRepository;
         this.payloadHashingService = payloadHashingService;
+        this.responseCache = responseCache;
     }
     
     /**
@@ -63,6 +67,29 @@ public class IdempotencyService {
             UUID merchantId,
             UUID idempotencyKey,
             PaymentRequest request) {
+        
+        // Fast-path: check cache first
+        try {
+            Optional<PaymentResponseDTO> cached = responseCache.retrieve(merchantId, idempotencyKey);
+            if (cached.isPresent()) {
+                logger.debug("Redis fast-path hit for merchant={}, idempotency_key={}", merchantId, idempotencyKey);
+                PaymentResponseDTO dto = cached.get();
+                Transaction cachedTx = Transaction.builder()
+                    .id(dto.getTransactionId())
+                    .merchantId(merchantId)
+                    .idempotencyKey(idempotencyKey)
+                    .amount(dto.getAmount())
+                    .currency(dto.getCurrency())
+                    .status(dto.getStatus())
+                    .maskedCard(dto.getMaskedCard())
+                    .createdAt(dto.getCreatedAt())
+                    .updatedAt(dto.getUpdatedAt())
+                    .build();
+                return Optional.of(cachedTx);
+            }
+        } catch (Exception e) {
+            logger.warn("Cache fast-path failed, falling back to database: {}", e.getMessage());
+        }
         
         // Query database for existing transaction with same merchant + idempotency_key
         Optional<Transaction> existing = transactionRepository.findByMerchantIdAndIdempotencyKey(
