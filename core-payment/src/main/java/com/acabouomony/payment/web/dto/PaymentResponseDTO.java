@@ -115,4 +115,10 @@ public class PaymentResponseDTO {
      */
     @JsonProperty("idempotency_key")
     private UUID idempotencyKey;
+
+    @JsonProperty("challenge_id")
+    private String challengeId;
+
+    @JsonProperty("acs_url")
+    private String acsUrl;
 }

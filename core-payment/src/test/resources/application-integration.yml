@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/payments_test
+    url: jdbc:postgresql://localhost:5434/payments_test
     username: postgres
-    password: postgres
+    password: root123
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -13,11 +13,6 @@ spring:
         format_sql: true
   flyway:
     enabled: false
-  redis:
-    host: localhost
-    port: 6379
-    database: 1
-    timeout: 5000
 
 logging:
   level:
@@ -27,7 +22,6 @@ logging:
 server:
   port: 8080
 
-# Payment processing configuration
 payment:
   mercado-pago:
     connect-timeout-ms: 500

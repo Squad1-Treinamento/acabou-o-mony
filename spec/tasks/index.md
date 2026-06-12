@@ -103,3 +103,44 @@ units of work that can be completed and verified.
 
 - task-000-placeholder.md — what a task is and how we use it
 
+## 3DS ↔ Core Payment Integration Tasks
+
+### 3DS Engine (Additive)
+
+- **task-3ds-01-jwt-generate-token.md** — Add `JwtTokenProvider.generateToken` method
+  - Status: ⏳ NOT STARTED
+  - Components: `generateToken(challengeId, txId, merchantId, amount)` using existing key and expirationSeconds
+  - Depends on: nothing
+
+- **task-3ds-02-session-request-dtos-and-create-session.md** — ThreeDsSession DTOs and `ChallengeSessionService.createSession`
+  - Status: ⏳ NOT STARTED
+  - Components: `ThreeDsSessionRequest`, `ThreeDsSessionResponse` records; `createSession` method; constructor update
+  - Depends on: task-3ds-01
+
+- **task-3ds-03-session-controller.md** — Create `ThreeDsSessionController` `POST /api/v1/3ds/sessions`
+  - Status: ⏳ NOT STARTED
+  - Components: `ThreeDsSessionController` (pure transport, 201 Created, API-key protected)
+  - Depends on: task-3ds-02
+
+### Core Payment (New Components)
+
+- **task-core-00-wire-payment-controller.md** — Wire `PaymentController` to call `processPayment()`
+  - Status: ⏳ NOT STARTED
+  - Components: `PaymentOrchestrationService` injection, conditional 202 for `CHALLENGE_PENDING`
+  - Depends on: nothing (parallelize with 3DS Engine tasks)
+
+- **task-core-01-three-ds-client.md** — `ThreeDsClient`, `challengeId` column, `PaymentResponseDTO` update
+  - Status: ⏳ NOT STARTED
+  - Components: `ThreeDsClient` (RestTemplate, risk fallback), Flyway migration V4, `Transaction.challengeId/challengeAcsUrl`, `PaymentResponseDTO` fields
+  - Depends on: task-3ds-03, task-core-00
+
+- **task-core-02-callback-handler.md** — `ThreeDsCompletedEvent`, callback handler, orchestration methods
+  - Status: ⏳ NOT STARTED
+  - Components: `ThreeDsCompletedEvent`, `ThreeDsCallbackController`, `completeThreeDsAuthentication()`, `resumePaymentAfterAuth()`
+  - Depends on: task-core-01
+
+- **task-core-03-payment-finalizer.md** — `ThreeDsPaymentFinalizer` and `@EnableAsync`
+  - Status: ⏳ NOT STARTED
+  - Components: `ThreeDsPaymentFinalizer` (`@Async @TransactionalEventListener(AFTER_COMMIT)`)
+  - Depends on: task-core-02
+

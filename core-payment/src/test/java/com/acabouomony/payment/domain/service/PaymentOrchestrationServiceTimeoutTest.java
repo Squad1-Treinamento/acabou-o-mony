@@ -5,12 +5,14 @@ import com.acabouomony.payment.domain.entity.Transaction;
 import com.acabouomony.payment.domain.exception.PaymentAcquirerException;
 import com.acabouomony.payment.domain.exception.PaymentTimeoutException;
 import com.acabouomony.payment.domain.model.PaymentStatus;
+import com.acabouomony.payment.infrastructure.client.ThreeDsClient;
 import com.acabouomony.payment.infrastructure.persistence.TransactionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -44,7 +46,13 @@ class PaymentOrchestrationServiceTimeoutTest {
     
     @Mock
     private UnknownStateTransitionHandler unknownStateTransitionHandler;
-    
+
+    @Mock
+    private ThreeDsClient threeDsClient;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
@@ -55,7 +63,9 @@ class PaymentOrchestrationServiceTimeoutTest {
             stateTransitionValidator,
             auditLogService,
             outboxEventService,
-            unknownStateTransitionHandler
+            unknownStateTransitionHandler,
+            threeDsClient,
+            eventPublisher
         );
     }
  
