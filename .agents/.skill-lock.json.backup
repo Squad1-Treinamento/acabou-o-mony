@@ -1,0 +1,56 @@
+{
+  "version": 2,
+  "skills": {
+    "tlc-spec-driven": {
+      "name": "tlc-spec-driven",
+      "source": "local",
+      "contentHash": "69867b0e19be1fb556d2e697f0f18f1de0363d1aa2de9d36754d5b107156357c",
+      "installedAt": "2026-06-12T12:59:20.561Z",
+      "updatedAt": "2026-06-12T13:00:27.583Z",
+      "agents": [
+        "cursor",
+        "claude-code",
+        "windsurf",
+        "opencode"
+      ],
+      "method": "copy",
+      "global": false
+    },
+    "codenavi": {
+      "name": "codenavi",
+      "source": "local",
+      "contentHash": "23ac05b7f2d8df8311129d41432eba248bdcf14e9ace3f17c581976f7d888ada",
+      "installedAt": "2026-06-12T13:00:43.360Z",
+      "updatedAt": "2026-06-12T13:00:43.360Z",
+      "agents": [
+        "opencode"
+      ],
+      "method": "copy",
+      "global": false
+    },
+    "coding-guidelines": {
+      "name": "coding-guidelines",
+      "source": "local",
+      "contentHash": "28a414c715d3c41aae28a25e2f109813ec3f246f76b5567c1e7d6a128cd289ff",
+      "installedAt": "2026-06-12T13:01:51.239Z",
+      "updatedAt": "2026-06-12T13:01:51.239Z",
+      "agents": [
+        "opencode"
+      ],
+      "method": "copy",
+      "global": false
+    },
+    "docs-writer": {
+      "name": "docs-writer",
+      "source": "local",
+      "contentHash": "c49827c59d2e27d313731dfd36314cfde0e8dbf15be0e8f813d2f8b751546b0c",
+      "installedAt": "2026-06-12T13:02:01.122Z",
+      "updatedAt": "2026-06-12T13:02:01.122Z",
+      "agents": [
+        "opencode"
+      ],
+      "method": "copy",
+      "global": false
+    }
+  }
+}
