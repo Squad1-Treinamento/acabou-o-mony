@@ -6,7 +6,7 @@
 In a vibrant, bustling city where local commerce thrives on innovation, merchants shared a common, crippling pain point: the complexity, slowness, and unreliability of existing payment systems. Enter **"Acabou o Mony"**, a fintech startup with a bold, simple mission: to revolutionize interactions with money by creating a platform capable of processing transactions with unprecedented speed and airtight security. The goal is to remove traditional payment barriers for everyone, from micro-entrepreneurs to large enterprises.
 
 **The Primary Persona: Ana**
-Ana is an entrepreneur striving to expand her small clothing business into the digital world by leveraging the highly lucrative but demanding format of **Live Commerce**. 
+Ana is an entrepreneur striving to expand her small clothing business into the digital world by leveraging the highly lucrative but demanding format of **Live Commerce**.
 * **The Pain Point:** Existing payment systems were painfully slow and frequently failed during her live streams, causing high cart abandonment, frustrating her customers, and halting her business growth.
 * **The Solution:** Ana adopted "Acabou o Mony". Despite initial skepticism from past failures with other gateways, the new platform delivered on its promise. Transactions processed instantly and integrated flawlessly with her Live Commerce setup. Her customers could finally purchase products seamlessly without stream interruptions.
 * **The Impact:** "Acabou o Mony" unlocked new growth opportunities for Ana and countless others, cementing its reputation as a transformative force in digital payments driven by a dedicated technical team.
@@ -30,3 +30,35 @@ The combined outcome is a fast, resilient, and trustworthy payment experience th
 
 - **Given** the platform serves merchants and card users during live and conversational commerce, **When** transactions are initiated at scale, **Then** payments are processed in under one second with immediate confirmation, the system scales automatically without end-user performance degradation, and each transaction uses secure connections and secure authentication.
 - **Given** customers stay inside live streams or chat interfaces, **When** they complete a purchase, **Then** the payment flow finishes without redirecting them away from the host platform.
+
+---
+
+## 4. Stack and Architecture
+
+| Layer | Technology |
+|---|---|
+| Runtime | Java 21, Spring Boot 3.3.5, Spring WebFlux (Netty) |
+| Database | PostgreSQL 16 via R2DBC (reactive, non-blocking) |
+| Cache/Session | Redis via Spring Data Redis Reactive |
+| Auth/Security | Spring Security, JWT (jjwt 0.12.6), 3DS 2.x |
+| Proxy | Nginx (TLS termination, rate limiting, reverse proxy) |
+| Public Exposure | ngrok (tunnel for local/staging) |
+| Containerization | Docker, Docker Compose |
+| CI | GitHub Actions |
+
+## 5. Commands
+
+| Context | Command | Description |
+|---|---|---|
+| Java build | `cd 3ds-engine && mvn test` | Run all Java unit/integration tests |
+| Python tests | `pytest tests/` | Run Python infra/integration tests |
+| Docker infra | `docker compose up -d --wait` | Start full stack (nginx + ngrok) |
+| Docker + tests | `docker compose up -d --wait && pytest tests/test_entrypoint.py` | Integration test against live stack |
+
+## 6. Environments
+
+| Name | Purpose | Entry point |
+|---|---|---|
+| Development | Local dev with hot reload | `http://localhost:8081` (3ds-engine) |
+| Docker | Full stack via compose | `http://localhost:8080` (nginx) → app |
+| Staging | ngrok tunnel + Docker | ngrok URL → nginx → app |

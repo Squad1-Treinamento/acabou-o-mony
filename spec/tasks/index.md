@@ -1,7 +1,7 @@
 # Tasks Index
 
-Use this index to find executable tasks. Tasks should be the smallest
-units of work that can be completed and verified.
+Use this index to find executable tasks. Tasks live in subdirectories
+grouped by feature branch (`tasks/<branch>/`).
 
 ## Core Payment Processing Tasks
 
@@ -101,7 +101,7 @@ units of work that can be completed and verified.
   - Status: ⏳ NOT STARTED
   - Description: Structured audit logging with masking and tamper-detection checksums
 
-- task-000-placeholder.md — what a task is and how we use it
+## Auth Engine Core Tasks
 
 ## 3DS ↔ Core Payment Integration Tasks
 
@@ -143,4 +143,3 @@ units of work that can be completed and verified.
   - Status: ⏳ NOT STARTED
   - Components: `ThreeDsPaymentFinalizer` (`@Async @TransactionalEventListener(AFTER_COMMIT)`)
   - Depends on: task-core-02
-
