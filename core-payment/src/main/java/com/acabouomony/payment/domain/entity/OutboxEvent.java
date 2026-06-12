@@ -76,4 +76,7 @@ public class OutboxEvent {
 
     @Column(name = "delivered_at")
     private Instant deliveredAt;
+
+    @Column(name = "signature", length = 255)
+    private String signature;
 }

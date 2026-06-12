@@ -2,6 +2,8 @@ package com.acabouomony.engine.security;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Date;
 
 import javax.crypto.SecretKey;
 
@@ -72,6 +74,19 @@ public class JwtTokenProvider {
             log.warn("Invalid JWT: {}", e.getMessage());
             return Mono.error(new InvalidTokenException("Invalid JWT token"));
         }
+    }
+
+    public String generateToken(String challengeId, String transactionId, String merchantId, long amount) {
+        Instant now = Instant.now();
+        return Jwts.builder()
+                .claim("challenge_id", challengeId)
+                .claim("transaction_id", transactionId)
+                .claim("merchant_id", merchantId)
+                .claim("amount", String.valueOf(amount))   // must be String for verify() compatibility
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plusSeconds(expirationSeconds)))
+                .signWith(key)
+                .compact();
     }
 
 }

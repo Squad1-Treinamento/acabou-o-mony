@@ -1,0 +1,30 @@
+info:
+  name: Declined (Low Risk)
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/payments"
+  body:
+    type: json
+    data: |-
+      {
+        "amount": 10001,
+        "currency": "USD",
+        "idempotency_key": "{{$randomUUID}}",
+        "payment_method": {
+          "type": "CARD",
+          "masked_card": "411111XXXXXX1111",
+          "card_token_id": "id da primeira requisição"
+        }
+      }
+  auth:
+    type: bearer
+    token: "{{apiKey}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

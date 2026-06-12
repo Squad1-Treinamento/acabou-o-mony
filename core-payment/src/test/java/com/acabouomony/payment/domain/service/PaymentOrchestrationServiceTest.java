@@ -3,6 +3,8 @@ package com.acabouomony.payment.domain.service;
 import com.acabouomony.payment.domain.dto.PaymentResult;
 import com.acabouomony.payment.domain.entity.Transaction;
 import com.acabouomony.payment.domain.model.PaymentStatus;
+import com.acabouomony.payment.infrastructure.client.ThreeDsClient;
+import com.acabouomony.payment.infrastructure.client.dto.ThreeDsSessionResponseDTO;
 import com.acabouomony.payment.infrastructure.persistence.TransactionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -10,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Nested;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import java.time.Instant;
@@ -54,7 +57,16 @@ class PaymentOrchestrationServiceTest {
     
     @Mock
     private OutboxEventService outboxEventService;
-    
+
+    @Mock
+    private UnknownStateTransitionHandler unknownStateTransitionHandler;
+
+    @Mock
+    private ThreeDsClient threeDsClient;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private PaymentOrchestrationService service;
     private UUID merchantId;
     private UUID transactionId;
@@ -68,7 +80,10 @@ class PaymentOrchestrationServiceTest {
             riskEvaluationService,
             stateTransitionValidator,
             auditLogService,
-            outboxEventService
+            outboxEventService,
+            unknownStateTransitionHandler,
+            threeDsClient,
+            eventPublisher
         );
         merchantId = UUID.randomUUID();
         transactionId = UUID.randomUUID();
@@ -126,13 +141,16 @@ class PaymentOrchestrationServiceTest {
         void testProcessesHighRiskPayment() {
             // Arrange
             Transaction transaction = createTransaction();
-            
+            var sessionResponse = ThreeDsSessionResponseDTO.builder()
+                .challengeId("ch-001").acsUrl("http://acs/ch-001").jwt("jwt-token").build();
+
             when(riskEvaluationService.isHighRisk(transaction)).thenReturn(true);
+            when(threeDsClient.createSession(any(), any())).thenReturn(Optional.of(sessionResponse));
             when(transactionRepository.save(any())).thenReturn(transaction);
-            
+
             // Act
             service.processPayment(transaction);
-            
+
             // Assert
             verify(riskEvaluationService).isHighRisk(transaction);
             verify(paymentAcquirerClient, never()).submitPayment(any());
@@ -149,7 +167,6 @@ class PaymentOrchestrationServiceTest {
         void testHandlesPaymentCompletion() {
             // Arrange
             Transaction transaction = createTransaction();
-            transaction.setStatus(PaymentStatus.PROCESSING);
             PaymentResult result = PaymentResult.builder()
                 .acquirerReference("mp_123")
                 .status(PaymentStatus.COMPLETED)
@@ -172,7 +189,6 @@ class PaymentOrchestrationServiceTest {
         void testHandlesPaymentDecline() {
             // Arrange
             Transaction transaction = createTransaction();
-            transaction.setStatus(PaymentStatus.PROCESSING);
             PaymentResult result = PaymentResult.builder()
                 .status(PaymentStatus.DECLINED)
                 .message("Insufficient funds")
@@ -195,7 +211,6 @@ class PaymentOrchestrationServiceTest {
         void testHandlesPaymentFailure() {
             // Arrange
             Transaction transaction = createTransaction();
-            transaction.setStatus(PaymentStatus.PROCESSING);
             PaymentResult result = PaymentResult.builder()
                 .status(PaymentStatus.FAILED)
                 .message("Internal error")
@@ -218,22 +233,21 @@ class PaymentOrchestrationServiceTest {
         void testHandlesPaymentTimeout() {
             // Arrange
             Transaction transaction = createTransaction();
-            transaction.setStatus(PaymentStatus.PROCESSING);
             PaymentResult result = PaymentResult.builder()
                 .status(PaymentStatus.UNKNOWN)
                 .message("Payment submission timeout")
                 .timestamp(Instant.now())
                 .build();
-            
+
             when(riskEvaluationService.isHighRisk(transaction)).thenReturn(false);
             when(paymentAcquirerClient.submitPayment(transaction)).thenReturn(result);
             when(transactionRepository.save(any())).thenReturn(transaction);
-            
+
             // Act
             service.processPayment(transaction);
-            
-            // Assert
-            verify(outboxEventService).createPaymentUnknownEvent(any());
+
+            // Assert — UNKNOWN result delegates to unknownStateTransitionHandler
+            verify(unknownStateTransitionHandler).transitionToUnknownDueToAcquirerError(any(), any());
         }
     }
     

@@ -27,8 +27,8 @@ import static org.assertj.core.api.Assertions.*;
  * - Multiple audit logs for same transaction linked correctly
  */
 @DataJpaTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
-@ActiveProfiles("test")
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@ActiveProfiles("integration")
 class AuditLogEntityTest {
 
     @Autowired

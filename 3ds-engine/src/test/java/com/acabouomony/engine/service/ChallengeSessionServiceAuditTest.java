@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.acabouomony.engine.exception.ChallengeExpiredException;
 import com.acabouomony.engine.model.ChallengeSession;
 import com.acabouomony.engine.repository.ChallengeSessionRepository;
+import com.acabouomony.engine.security.JwtTokenProvider;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -29,13 +30,16 @@ class ChallengeSessionServiceAuditTest {
     @Mock
     private ChallengeSessionRepository repository;
 
+    @Mock
+    private JwtTokenProvider jwtTokenProvider;
+
     private ChallengeSessionService service;
     private Logger logger;
     private ListAppender<ILoggingEvent> appender;
 
     @BeforeEach
     void setUp() {
-        service = new ChallengeSessionService(repository);
+        service = new ChallengeSessionService(repository, jwtTokenProvider, "http://localhost:8081/challenge", 600L);
         logger = (Logger) org.slf4j.LoggerFactory.getLogger(ChallengeSessionService.class);
         appender = new ListAppender<>();
         appender.start();

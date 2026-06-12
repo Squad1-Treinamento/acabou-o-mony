@@ -1,0 +1,46 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5434/payments_test
+    username: postgres
+    password: root123
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: false
+
+logging:
+  level:
+    root: WARN
+    com.acabouomony: DEBUG
+
+server:
+  port: 8080
+
+payment:
+  mercado-pago:
+    connect-timeout-ms: 500
+    read-timeout-ms: 2000
+
+  unknown-state:
+    reconciliation-delay-ms: 1000
+    reconciliation-timeout-ms: 300000
+    max-retry-attempts: 3
+    backoff-base-ms: 100
+    stale-threshold-minutes: 5
+    max-concurrent-per-merchant: 2
+    max-queue-depth-per-merchant: 10
+
+mercado-pago:
+  api-url: https://api.mercadopago.com
+  access-token: test-token
+  webhook-url: http://localhost:8080/webhooks
+
+3ds:
+  base-url: http://localhost:9999
+  api-key: test-api-key

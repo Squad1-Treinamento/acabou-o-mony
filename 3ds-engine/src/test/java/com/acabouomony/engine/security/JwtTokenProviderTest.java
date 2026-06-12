@@ -132,4 +132,37 @@ class JwtTokenProviderTest {
                 .verify(Duration.ofSeconds(5));
     }
 
+    @Test
+    void shouldGenerateTokenWithCorrectClaims() {
+        var token = provider.generateToken("ch-gen-01", "txn-gen-01", "merchant-gen", 15000L);
+
+        StepVerifier.create(provider.verify(token))
+                .assertNext(claims -> {
+                    assertThat(claims.challengeId()).isEqualTo("ch-gen-01");
+                    assertThat(claims.transactionId()).isEqualTo("txn-gen-01");
+                    assertThat(claims.merchantId()).isEqualTo("merchant-gen");
+                    assertThat(claims.amount()).isEqualByComparingTo(new BigDecimal("15000"));
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void shouldGenerateTokenWithExpirationMatchingConfig() {
+        var token = provider.generateToken("ch-exp-01", "txn-exp-01", "merchant-exp", 500L);
+
+        StepVerifier.create(provider.verify(token))
+                .assertNext(claims -> {
+                    assertThat(claims.expiresAt()).isAfter(Instant.now().plusSeconds(590));
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void shouldGenerateDistinctTokensForDifferentInputs() {
+        var token1 = provider.generateToken("ch-distinct-01", "txn-same", "merchant-same", 100L);
+        var token2 = provider.generateToken("ch-distinct-02", "txn-same", "merchant-same", 100L);
+
+        assertThat(token1).isNotEqualTo(token2);
+    }
+
 }

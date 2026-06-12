@@ -64,6 +64,12 @@ public class Transaction {
     @Column(name = "acquirer_reference", length = 255)
     private String acquirerReference;
 
+    @Column(name = "challenge_id", length = 36)
+    private String challengeId;
+
+    @Column(name = "challenge_acs_url", length = 512)
+    private String challengeAcsUrl;
+
     @Version
     @Column(nullable = false)
     private Integer version;

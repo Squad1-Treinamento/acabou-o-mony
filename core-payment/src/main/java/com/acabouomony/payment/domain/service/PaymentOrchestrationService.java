@@ -2,10 +2,15 @@ package com.acabouomony.payment.domain.service;
 
 import com.acabouomony.payment.domain.dto.PaymentResult;
 import com.acabouomony.payment.domain.entity.Transaction;
+import com.acabouomony.payment.domain.event.ThreeDsCompletedEvent;
 import com.acabouomony.payment.domain.exception.PaymentAcquirerException;
 import com.acabouomony.payment.domain.exception.PaymentTimeoutException;
 import com.acabouomony.payment.domain.model.PaymentStatus;
+import com.acabouomony.payment.domain.model.RiskLevel;
+import com.acabouomony.payment.infrastructure.client.ThreeDsClient;
+import com.acabouomony.payment.infrastructure.client.dto.ThreeDsSessionRequestDTO;
 import com.acabouomony.payment.infrastructure.persistence.TransactionRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
+import java.util.UUID;
 
 /**
  * Payment processing orchestration service.
@@ -69,7 +75,9 @@ public class PaymentOrchestrationService {
     private final AuditLogService auditLogService;
     private final OutboxEventService outboxEventService;
     private final UnknownStateTransitionHandler unknownStateTransitionHandler;
-    
+    private final ThreeDsClient threeDsClient;
+    private final ApplicationEventPublisher eventPublisher;
+
     public PaymentOrchestrationService(
             TransactionRepository transactionRepository,
             PaymentAcquirerClient paymentAcquirerClient,
@@ -77,7 +85,9 @@ public class PaymentOrchestrationService {
             StateTransitionValidator stateTransitionValidator,
             AuditLogService auditLogService,
             OutboxEventService outboxEventService,
-            UnknownStateTransitionHandler unknownStateTransitionHandler) {
+            UnknownStateTransitionHandler unknownStateTransitionHandler,
+            ThreeDsClient threeDsClient,
+            ApplicationEventPublisher eventPublisher) {
         this.transactionRepository = transactionRepository;
         this.paymentAcquirerClient = paymentAcquirerClient;
         this.riskEvaluationService = riskEvaluationService;
@@ -85,6 +95,8 @@ public class PaymentOrchestrationService {
         this.auditLogService = auditLogService;
         this.outboxEventService = outboxEventService;
         this.unknownStateTransitionHandler = unknownStateTransitionHandler;
+        this.threeDsClient = threeDsClient;
+        this.eventPublisher = eventPublisher;
     }
     
     /**
@@ -99,12 +111,12 @@ public class PaymentOrchestrationService {
      * @param transaction The transaction to process
      */
     public void processPayment(Transaction transaction) {
-        logger.info("Processing payment: transaction_id={}, amount={}, currency={}",
-            transaction.getId(), transaction.getAmount(), transaction.getCurrency());
-        
         if (transaction == null) {
             throw new IllegalArgumentException("Transaction cannot be null");
         }
+
+        logger.info("Processing payment: transaction_id={}, amount={}, currency={}",
+            transaction.getId(), transaction.getAmount(), transaction.getCurrency());
         
         // Validate initial state
         if (transaction.getStatus() != PaymentStatus.CREATED) {
@@ -121,12 +133,23 @@ public class PaymentOrchestrationService {
             boolean isHighRisk = riskEvaluationService.isHighRisk(transaction);
             
             if (isHighRisk) {
-                // High-risk: transition to CHALLENGE_PENDING (3DS required)
-                logger.info("High-risk transaction detected: transaction_id={}, transitioning to CHALLENGE_PENDING",
-                    transaction.getId());
-                transitionState(transaction, PaymentStatus.CHALLENGE_PENDING, "system");
-                // Return here; payment will continue after 3DS challenge completes
-                return;
+                logger.info("High-risk transaction: transaction_id={}, calling 3DS Engine", transaction.getId());
+                ThreeDsSessionRequestDTO req = ThreeDsSessionRequestDTO.builder()
+                        .transactionId(transaction.getId().toString())
+                        .merchantId(transaction.getMerchantId().toString())
+                        .amount(transaction.getAmount())
+                        .currency(transaction.getCurrency())
+                        .cardToken(transaction.getCardTokenId())
+                        .build();
+                var sessionOpt = threeDsClient.createSession(req, RiskLevel.HIGH);
+                if (sessionOpt.isPresent()) {
+                    var session = sessionOpt.get();
+                    transaction.setChallengeId(session.getChallengeId());
+                    transaction.setChallengeAcsUrl(session.getAcsUrl());
+                    transitionState(transaction, PaymentStatus.CHALLENGE_PENDING, "system");
+                    return;
+                }
+                // frictionless fallback (empty = 3DS engine unavailable for LOW risk; HIGH risk throws)
             }
             
             // Low-risk: proceed directly to PROCESSING
@@ -164,6 +187,35 @@ public class PaymentOrchestrationService {
         }
     }
     
+    @Transactional
+    public void completeThreeDsAuthentication(UUID txId, boolean approved) {
+        Transaction tx = transactionRepository.findById(txId)
+                .orElseThrow(() -> new RuntimeException("Transaction not found: " + txId));
+        if (tx.getStatus() != PaymentStatus.CHALLENGE_PENDING) {
+            logger.info("completeThreeDsAuthentication: tx {} already in {}, skipping", txId, tx.getStatus());
+            return;
+        }
+        transitionState(tx, approved ? PaymentStatus.AUTHENTICATED : PaymentStatus.DECLINED, "3ds-engine");
+        eventPublisher.publishEvent(new ThreeDsCompletedEvent(txId, approved));
+    }
+
+    @Transactional
+    public void resumePaymentAfterAuth(UUID txId) {
+        Transaction tx = transactionRepository.findById(txId)
+                .orElseThrow(() -> new RuntimeException("Transaction not found: " + txId));
+        try {
+            transitionState(tx, PaymentStatus.PROCESSING, "system");
+            PaymentResult result = paymentAcquirerClient.submitPayment(tx);
+            handlePaymentResult(tx, result);
+        } catch (PaymentTimeoutException e) {
+            logger.warn("Timeout after 3DS auth: transaction_id={}", txId);
+            unknownStateTransitionHandler.transitionToUnknownDueToTimeout(tx, e.getMessage());
+        } catch (PaymentAcquirerException e) {
+            logger.warn("Acquirer error after 3DS auth: transaction_id={}", txId);
+            unknownStateTransitionHandler.transitionToUnknownDueToAcquirerError(tx, e.getMessage());
+        }
+    }
+
     /**
      * Handles payment result from acquirer.
      * 
@@ -244,12 +296,14 @@ public class PaymentOrchestrationService {
             try {
                 // Update transaction state
                 transaction.setStatus(newStatus);
-                transaction.setVersion(transaction.getVersion() + 1);
                 transaction.setUpdatedAt(Instant.now());
-                
+
                 // Persist transaction (version conflict checked here)
                 transactionRepository.save(transaction);
-                
+
+                // Increment version after successful save (Hibernate uses old version in WHERE clause)
+                transaction.setVersion(transaction.getVersion() + 1);
+
                 // Create audit log entry (same transaction)
                 auditLogService.logStateTransition(transaction, oldStatus, newStatus, actor);
                 

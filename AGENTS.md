@@ -4,9 +4,24 @@ Purpose
 - Provide a single, minimal index for AI agents in this SDD project.
 - Specs are the source of truth; update specs before code changes.
 
-SDD Workflow
-- Direct implementation (minimum): Vision -> Specs -> Tasks -> Implement -> Validate
-- Full planning (as needed): Vision -> User Stories -> Specs -> Tech Plans -> Tasks -> Implement -> Validate
+SDD Workflow (two tracks, choose per task)
+
+  Direct (minimum — when the task is clear and constrained):
+    Vision → Specs → Tasks → Implement → Validate
+
+  Full (when ambiguity or cross-cutting concerns exist):
+    Vision → User Stories → Specs → Tech Plans → Tasks → Implement → Validate
+
+  Quick fix (≤3 files, obvious scope):
+    Implement → Validate
+    Skip spec docs entirely; document only if patterns emerge.
+
+Tasks live in `spec/tasks/<branch>/` — one subdirectory per feature branch.
+
+Validation commands (run after every Implement):
+  - Java: `cd 3ds-engine && mvn test`
+  - Python: `pytest tests/`
+  - Docker infra: `docker compose up -d --wait && pytest tests/test_entrypoint.py`
 
 Agent Roles (prompt must declare the role)
 - Spec Architect: writes/updates specs and acceptance criteria. No code or tests.
@@ -21,7 +36,7 @@ Doc Index (start here)
 - `spec/tech-plans/index.md`
 - `spec/tasks/index.md`
 - `spec/adrs/index.md`
-- `CONTEXT.md` (TBD: stack, commands, environments)
+- `CONTEXT.md` — stack, commands, environments
 
 Guardrails
 - Do not invent requirements; follow specs and acceptance criteria only.
