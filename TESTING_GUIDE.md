@@ -83,6 +83,7 @@ security.merchant.webhook-secret=your-super-secret-key-for-signing-webhooks
 
 # Webhook secret key prefix
 webhook.secret-key-prefix=webhook_secret_
+webhook.secret=YOUR-TEST-SECRET
 
 # HTTP timeout for webhook requests (milliseconds)
 webhook.http-timeout-ms=5000
@@ -158,8 +159,7 @@ Now, use the generated hash to insert a merchant record into your database. The 
 
 ```sql
 -- This record uses 'teste-key' as the plaintext API key.
-INSERT INTO merchants (id, merchant_id, api_key_hash, webhook_url, created_at)
-VALUES (
+INSERT INTO merchants (id, merchant_id, api_key_hash, webhook_url, created_at) VALUES (
     'f47ac10b-58cc-4372-a567-0e02b2c3d479',
     'a1b2c3d4-e5f6-4a3b-9c8d-7e6f5a4b3c2d',
     '$argon2id$v=19$m=65536,t=3,p=1$H8ywTNrF+fIm0Is4EHQASA$UDGVw9FSUIVF4aLT6L6U3dsuRca6CLb6s4pegP0lZqI',
