@@ -159,6 +159,7 @@ public class OutboxEventService {
                 .retryCount(0)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
+                .signature("")
                 .build();
             
             // Persist to database (within current transaction)

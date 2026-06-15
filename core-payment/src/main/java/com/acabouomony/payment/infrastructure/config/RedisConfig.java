@@ -1,6 +1,9 @@
 package com.acabouomony.payment.infrastructure.config;
 
 import com.acabouomony.payment.web.dto.PaymentResponseDTO;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,10 +21,14 @@ public class RedisConfig {
         RedisTemplate<String, PaymentResponseDTO> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
 
-        StringRedisSerializer stringSerializer = new StringRedisSerializer();
-        Jackson2JsonRedisSerializer<PaymentResponseDTO> jsonSerializer =
-                new Jackson2JsonRedisSerializer<>(PaymentResponseDTO.class);
+        ObjectMapper mapper = new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
+        Jackson2JsonRedisSerializer<PaymentResponseDTO> jsonSerializer =
+                new Jackson2JsonRedisSerializer<>(mapper, PaymentResponseDTO.class);
+
+        StringRedisSerializer stringSerializer = new StringRedisSerializer();
         template.setKeySerializer(stringSerializer);
         template.setHashKeySerializer(stringSerializer);
         template.setValueSerializer(jsonSerializer);

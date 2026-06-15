@@ -7,7 +7,10 @@ import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.security.MessageDigest;
+import java.util.Base64;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Service for merchant authentication using hashed API keys.
@@ -31,22 +34,30 @@ import java.util.Optional;
  */
 @Service
 public class MerchantAuthService {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(MerchantAuthService.class);
-    
+    private static final long AUTH_CACHE_TTL_MS = 300_000; // 5 minutes
+
+    private record CachedAuth(Merchant merchant, long expiresAt) {
+        boolean isValid() { return System.currentTimeMillis() < expiresAt; }
+    }
+
+    private final ConcurrentHashMap<String, CachedAuth> authCache = new ConcurrentHashMap<>();
     private final MerchantRepository merchantRepository;
     private final Argon2PasswordEncoder passwordEncoder;
-    
+
     public MerchantAuthService(MerchantRepository merchantRepository) {
         this.merchantRepository = merchantRepository;
-        // Argon2PasswordEncoder with secure parameters
-        // Parameters: saltLength=16, hashLength=32, parallelism=1, memory=65536 KB (64 MB), iterations=3
-        // Security note: Argon2's strength comes from the combination of:
-        // - Memory (65536 KB = 64 MB): Primary defense against brute-force attacks
-        // - Iterations (3): Number of passes over memory
-        // - Parallelism (1): Number of parallel threads
-        // These are recommended defaults providing strong protection.
         this.passwordEncoder = new Argon2PasswordEncoder(16, 32, 1, 65536, 3);
+    }
+
+    private String cacheKey(String apiKey) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return Base64.getEncoder().encodeToString(digest.digest(apiKey.getBytes()));
+        } catch (Exception e) {
+            return String.valueOf(apiKey.hashCode());
+        }
     }
     
     /**
@@ -73,16 +84,21 @@ public class MerchantAuthService {
             logger.warn("Authentication attempt with null or empty API key");
             return Optional.empty();
         }
-        
+
+        String key = cacheKey(apiKey);
+        CachedAuth cached = authCache.get(key);
+        if (cached != null && cached.isValid()) {
+            logger.debug("Auth cache hit for merchant {}", cached.merchant().getMerchantId());
+            return Optional.of(cached.merchant());
+        }
+
         logger.info("Authentication attempt initiated");
-        
-        // Query all merchants and verify each one
-        // This is necessary because Argon2 generates different hashes for the same input
-        // (due to random salt), so we cannot query by hash directly
+
         return merchantRepository.findAll().stream()
             .filter(merchant -> passwordEncoder.matches(apiKey, merchant.getApiKeyHash()))
             .findFirst()
             .map(merchant -> {
+                authCache.put(key, new CachedAuth(merchant, System.currentTimeMillis() + AUTH_CACHE_TTL_MS));
                 logger.info("Authentication successful for merchant {}", merchant.getMerchantId());
                 return merchant;
             })

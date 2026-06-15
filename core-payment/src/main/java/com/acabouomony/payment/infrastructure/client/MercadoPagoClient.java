@@ -10,6 +10,7 @@ import com.acabouomony.payment.infrastructure.client.dto.MercadoPagoRequest;
 import com.acabouomony.payment.infrastructure.client.dto.MercadoPagoResponse;
 import com.acabouomony.payment.infrastructure.client.exception.MercadoPagoException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.slf4j.Logger;
@@ -44,6 +45,7 @@ import java.time.Instant;
  * - HttpClientErrorException (4xx) -> MercadoPagoException (triggers FAILED)
  */
 @Component
+@Profile("!mock-acquirer")
 public class MercadoPagoClient implements PaymentAcquirerClient {
     
     private static final Logger logger = LoggerFactory.getLogger(MercadoPagoClient.class);
