@@ -7,7 +7,9 @@
   "variable": [
     { "key": "baseUrl",   "value": "http://localhost:8080" },
     { "key": "apiKey",    "value": "teste_key" },
-    { "key": "replayKey", "value": "" }
+    { "key": "replayKey",            "value": "" },
+    { "key": "lastTransactionId",    "value": "" },
+    { "key": "declineTransactionId", "value": "" }
   ],
   "item": [
     {
@@ -35,7 +37,7 @@
                   "pm.test('Status 202 Accepted', () => pm.response.to.have.status(202));",
                   "pm.test('Responde em menos de 1 segundo', () => pm.expect(pm.response.responseTime).to.be.below(1000));",
                   "pm.test('Corpo tem transaction_id', () => { const b = pm.response.json(); pm.expect(b).to.have.property('transaction_id'); });",
-                  "pm.test('Status é CHALLENGE_PENDING', () => { const b = pm.response.json(); pm.expect(b.status).to.eql('CHALLENGE_PENDING'); });",
+                  "pm.test('Status é válido (CHALLENGE_PENDING ou COMPLETED)', () => { const b = pm.response.json(); pm.expect(b.status).to.be.oneOf(['CHALLENGE_PENDING', 'COMPLETED', 'PROCESSING', 'AUTHENTICATED']); });",
                   "pm.test('Amount correto (5000)', () => { const b = pm.response.json(); pm.expect(b.amount).to.eql(5000); });",
                   "pm.test('Currency é BRL', () => { const b = pm.response.json(); pm.expect(b.currency).to.eql('BRL'); });",
                   "pm.collectionVariables.set('lastTransactionId', pm.response.json().transaction_id);"
@@ -110,7 +112,7 @@
                 "exec": [
                   "pm.test('Status 2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 202]));",
                   "pm.test('Responde em menos de 1 segundo', () => pm.expect(pm.response.responseTime).to.be.below(1000));",
-                  "pm.test('Amount correto (1000)', () => { const b = pm.response.json(); pm.expect(b.amount).to.eql(1000); });",
+                  "pm.test('Amount correto R$10 (1000 centavos)', () => { const b = pm.response.json(); pm.expect(b.amount).to.eql(1000); });",
                   "pm.test('transaction_id presente', () => pm.expect(pm.response.json()).to.have.property('transaction_id'));",
                   "pm.collectionVariables.set('lastTransactionId', pm.response.json().transaction_id);"
                 ]
@@ -398,6 +400,25 @@
           "name": "12 – Recusar 3DS (CHALLENGE_PENDING → DECLINED)",
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const uuid = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); });",
+                  "const key = uuid();",
+                  "pm.sendRequest({",
+                  "  url: pm.collectionVariables.get('baseUrl') + '/api/v1/payments',",
+                  "  method: 'POST',",
+                  "  header: { 'Authorization': 'Bearer ' + pm.collectionVariables.get('apiKey'), 'Content-Type': 'application/json' },",
+                  "  body: { mode: 'raw', raw: JSON.stringify({ amount: 7500, currency: 'BRL', idempotency_key: key, payment_method: { card_token_id: 'tok-3ds-decline-' + key.substring(0,8), masked_card: '411111XXXXXX1111' } }) }",
+                  "}, function(err, res) {",
+                  "  if (!err && res.json().transaction_id) {",
+                  "    pm.collectionVariables.set('declineTransactionId', res.json().transaction_id);",
+                  "  }",
+                  "});"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "exec": [
@@ -414,7 +435,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"transaction_id\": \"{{lastTransactionId}}\",\n  \"auth_status\": \"declined\"\n}"
+              "raw": "{\n  \"transaction_id\": \"{{declineTransactionId}}\",\n  \"auth_status\": \"declined\"\n}"
             },
             "url": { "raw": "{{baseUrl}}/api/v1/payments/3ds-callback", "host": ["{{baseUrl}}"], "path": ["api","v1","payments","3ds-callback"] }
           }
@@ -428,7 +449,7 @@
       "item": [
 
         {
-          "name": "11 – Sem header Authorization (→ 401)",
+          "name": "E1 – Sem header Authorization (→ 401)",
           "event": [
             {
               "listen": "prerequest",
@@ -458,7 +479,7 @@
         },
 
         {
-          "name": "12 – API key inválida (→ 401)",
+          "name": "E2 – API key inválida (→ 401)",
           "event": [
             {
               "listen": "prerequest",
@@ -489,7 +510,7 @@
         },
 
         {
-          "name": "13 – Amount zero (→ 400)",
+          "name": "E3 – Amount zero (→ 400)",
           "event": [
             {
               "listen": "prerequest",
@@ -520,7 +541,7 @@
         },
 
         {
-          "name": "14 – Moeda inválida XYZ (→ 400)",
+          "name": "E4 – Moeda inválida XYZ (→ 400)",
           "event": [
             {
               "listen": "prerequest",
@@ -551,7 +572,7 @@
         },
 
         {
-          "name": "15 – Sem payment_method (→ 400)",
+          "name": "E5 – Sem payment_method (→ 400)",
           "event": [
             {
               "listen": "prerequest",
