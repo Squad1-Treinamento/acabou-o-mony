@@ -8,14 +8,17 @@ services:
     ports:
       - "8080:80"
     environment:
-      - UPSTREAMS=${UPSTREAMS}
+      - UPSTREAMS=${UPSTREAMS:-core-payment:8080}
       - UPSTREAM_HOST=${UPSTREAM_HOST}
       - UPSTREAM_PORT=${UPSTREAM_PORT}
-      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
       - NGINX_TEMPLATE=/etc/nginx/nginx.conf.template
       - NGINX_CONF=/etc/nginx/conf.d/default.conf
+    depends_on:
+      core-payment:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost/healthz >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz >/dev/null 2>&1 || exit 1"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -34,7 +37,7 @@ services:
     command: ["http", "http://nginx:80"]
     networks:
       - edge-net
-  
+
   postgres:
     image: postgres:15-alpine
     container_name: database-payment
@@ -51,27 +54,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  
-  # Example httpd service (for testing reverse proxy and load balancing)
-  # Copy this block and uncomment to add more services for testing
-  ## servico-a:
-  ##   image: httpd:alpine
-  ##   container_name: servico-a
-  ##   command: [/bin/sh, -c, "echo '<html><body><h1>Servidor A</h1><p>Upstream: servico-b:80</p></body></html>' > /usr/local/apache2/htdocs/index.html && httpd-foreground"]
-  ##   networks:
-  ##     - edge-net
-  ##   healthcheck:
-  ##     test: ["CMD", "wget", "-qO-", "http://localhost/"]
-  ##     interval: 5s
-  ##     timeout: 3s
-  ##     retries: 3
-  
-  # Example backend service (optional)
-  # app:
-  #   image: nginx:alpine
-  #   networks:
-  #     - edge-net
+    networks:
+      - acabou-o-mony-network
 
   # Redis Standalone for Cache and Idempotency Layer
   redis:
@@ -89,7 +73,7 @@ services:
       retries: 3
     networks:
       - acabou-o-mony-network
-  
+
   # 3DS / MFA Auth Engine
   3ds-engine:
     build: ./3ds-engine
@@ -105,28 +89,53 @@ services:
       - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - SPRING_DATA_REDIS_DATABASE=${REDIS_DATABASE:-0}
       - SPRING_DATA_REDIS_TIMEOUT=${REDIS_TIMEOUT_MS:-5000}ms
+      - JWT_SECRET=${JWT_SECRET:-mony-3ds-jwt-secret-for-challenge-tokens-2024-production}
+      - THREEDS_ENGINE_API_KEY=${THREEDS_API_KEY:-mony-3ds-api-key-2024-secure}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - acabou-o-mony-network
       - edge-net
-  
-  # Core Payment Service (to be implemented)
-  # core-service:
-  #   build: ./core-service
-  #   container_name: core-service
-  #   ports:
-  #     - "8082:8080"
-  #   depends_on:
-  #     redis:
-  #       condition: service_healthy
-  #   environment:
-  #     - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-redis}
-  #     - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
-  #     - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
-  #     - CACHE_ENABLED=${CACHE_ENABLED:-true}
-  #     - CACHE_FALLBACK_TO_DB_ON_ERROR=${CACHE_FALLBACK_TO_DB_ON_ERROR:-true}
-  #   networks:
-  #     - acabou-o-mony-network
-  #     - edge-net
+
+  # Core Payment Service
+  core-payment:
+    build: ./core-payment
+    container_name: core-payment
+    ports:
+      - "8082:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      3ds-engine:
+        condition: service_healthy
+    environment:
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL:-jdbc:postgresql://database-payment:5432/payment-service}
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME:-postgres}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD:-root123}
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-redis}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - SPRING_DATA_REDIS_DATABASE=${REDIS_DATABASE:-0}
+      - SPRING_DATA_REDIS_TIMEOUT=${REDIS_TIMEOUT_MS:-5000}
+      - THREEDS_BASE_URL=${THREEDS_BASE_URL:-http://3ds-engine:8080}
+      - THREEDS_API_KEY=${THREEDS_API_KEY:-mony-3ds-api-key-2024-secure}
+      - MERCADO_PAGO_ACCESS_TOKEN=${MERCADO_PAGO_ACCESS_TOKEN:-test-token}
+      - MERCADO_PAGO_API_URL=${MERCADO_PAGO_API_URL:-https://api.mercadopago.com}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    networks:
+      - acabou-o-mony-network
+      - edge-net
 
 volumes:
   postgres_data:
