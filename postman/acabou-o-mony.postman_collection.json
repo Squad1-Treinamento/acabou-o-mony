@@ -1,0 +1,587 @@
+{
+  "info": {
+    "name": "Acabou o Mony – Transações via Nginx",
+    "description": "Fluxo completo de início de transação passando pelo Nginx (porta 8080). 10 cenários de sucesso + 5 de erro.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",   "value": "http://localhost:8080" },
+    { "key": "apiKey",    "value": "teste_key" },
+    { "key": "replayKey", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "✅ Cenários de Sucesso",
+      "item": [
+
+        {
+          "name": "01 – Nova transação R$50 (novo cartão → CHALLENGE_PENDING)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const uuid = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); });",
+                  "const key = uuid();",
+                  "pm.variables.set('idemKey', key);",
+                  "pm.collectionVariables.set('replayKey', key);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 202 Accepted', () => pm.response.to.have.status(202));",
+                  "pm.test('Responde em menos de 1 segundo', () => pm.expect(pm.response.responseTime).to.be.below(1000));",
+                  "pm.test('Corpo tem transaction_id', () => { const b = pm.response.json(); pm.expect(b).to.have.property('transaction_id'); });",
+                  "pm.test('Status é CHALLENGE_PENDING', () => { const b = pm.response.json(); pm.expect(b.status).to.eql('CHALLENGE_PENDING'); });",
+                  "pm.test('Amount correto (5000)', () => { const b = pm.response.json(); pm.expect(b.amount).to.eql(5000); });",
+                  "pm.test('Currency é BRL', () => { const b = pm.response.json(); pm.expect(b.currency).to.eql('BRL'); });",
+                  "pm.collectionVariables.set('lastTransactionId', pm.response.json().transaction_id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{apiKey}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 5000,\n  \"currency\": \"BRL\",\n  \"idempotency_key\": \"{{idemKey}}\",\n  \"payment_method\": {\n    \"card_token_id\": \"tok-visa-5000-brl-001\",\n    \"masked_card\": \"411111XXXXXX1111\"\n  }\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/payments", "host": ["{{baseUrl}}"], "path": ["api","v1","payments"] }
+          }
+        },
+
+        {
+          "name": "02 – Replay idempotente (mesma key → HTTP 200 do cache)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.variables.set('idemKey', pm.collectionVariables.get('replayKey'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK (cache hit)', () => pm.response.to.have.status(200));",
+                  "pm.test('Responde em menos de 200ms (fast-path)', () => pm.expect(pm.response.responseTime).to.be.below(200));",
+                  "pm.test('Mesmo transaction_id (idempotente)', () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.transaction_id).to.eql(pm.collectionVariables.get('lastTransactionId'));",
+                  "});",
+                  "pm.test('Status CHALLENGE_PENDING ou COMPLETED (cache)', () => { const b = pm.response.json(); pm.expect(b.status).to.be.oneOf(['CHALLENGE_PENDING', 'COMPLETED']); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{apiKey}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 5000,\n  \"currency\": \"BRL\",\n  \"idempotency_key\": \"{{idemKey}}\",\n  \"payment_method\": {\n    \"card_token_id\": \"tok-visa-5000-brl-001\",\n    \"masked_card\": \"411111XXXXXX1111\"\n  }\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/payments", "host": ["{{baseUrl}}"], "path": ["api","v1","payments"] }
+          }
+        },
+
+        {
+          "name": "03 – Transação R$10 (valor baixo)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "exec": ["const uuid = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); }); pm.variables.set('idemKey', uuid());"] }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 202]));",
+                  "pm.test('Responde em menos de 1 segundo', () => pm.expect(pm.response.responseTime).to.be.below(1000));",
+                  "pm.test('Amount correto (1000)', () => { const b = pm.response.json(); pm.expect(b.amount).to.eql(1000); });",
+                  "pm.test('transaction_id presente', () => pm.expect(pm.response.json()).to.have.property('transaction_id'));",
+                  "pm.collectionVariables.set('lastTransactionId', pm.response.json().transaction_id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{apiKey}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 1000,\n  \"currency\": \"BRL\",\n  \"idempotency_key\": \"{{idemKey}}\",\n  \"payment_method\": {\n    \"card_token_id\": \"tok-visa-1000-brl-002\",\n    \"masked_card\": \"411111XXXXXX1111\"\n  }\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/payments", "host": ["{{baseUrl}}"], "path": ["api","v1","payments"] }
+          }
+        },
+
+        {
+          "name": "04 – Transação com customer_id e email",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "exec": ["const uuid = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); }); pm.variables.set('idemKey', uuid());"] }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 202]));",
+                  "pm.test('Responde em menos de 1 segundo', () => pm.expect(pm.response.responseTime).to.be.below(1000));",
+                  "pm.test('transaction_id presente', () => pm.expect(pm.response.json()).to.have.property('transaction_id'));",
+                  "pm.test('Currency BRL', () => pm.expect(pm.response.json().currency).to.eql('BRL'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{apiKey}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 2500,\n  \"currency\": \"BRL\",\n  \"idempotency_key\": \"{{idemKey}}\",\n  \"payment_method\": {\n    \"card_token_id\": \"tok-mastercard-2500-003\",\n    \"masked_card\": \"523456XXXXXX7890\"\n  },\n  \"customer_id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/payments", "host": ["{{baseUrl}}"], "path": ["api","v1","payments"] }
+          }
+        },
+
+        {
+          "name": "05 – Transação em USD",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "exec": ["const uuid = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); }); pm.variables.set('idemKey', uuid());"] }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 202]));",
+                  "pm.test('Responde em menos de 1 segundo', () => pm.expect(pm.response.responseTime).to.be.below(1000));",
+                  "pm.test('Currency USD', () => pm.expect(pm.response.json().currency).to.eql('USD'));",
+                  "pm.test('Amount correto (9999)', () => pm.expect(pm.response.json().amount).to.eql(9999));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{apiKey}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 9999,\n  \"currency\": \"USD\",\n  \"idempotency_key\": \"{{idemKey}}\",\n  \"payment_method\": {\n    \"card_token_id\": \"tok-amex-usd-004\",\n    \"masked_card\": \"378282XXXXXX1001\"\n  }\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/payments", "host": ["{{baseUrl}}"], "path": ["api","v1","payments"] }
+          }
+        },
+
+        {
+          "name": "06 – Transação em EUR",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "exec": ["const uuid = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); }); pm.variables.set('idemKey', uuid());"] }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 202]));",
+                  "pm.test('Responde em menos de 1 segundo', () => pm.expect(pm.response.responseTime).to.be.below(1000));",
+                  "pm.test('Currency EUR', () => pm.expect(pm.response.json().currency).to.eql('EUR'));",
+                  "pm.test('transaction_id presente', () => pm.expect(pm.response.json()).to.have.property('transaction_id'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{apiKey}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 4990,\n  \"currency\": \"EUR\",\n  \"idempotency_key\": \"{{idemKey}}\",\n  \"payment_method\": {\n    \"card_token_id\": \"tok-visa-eur-005\",\n    \"masked_card\": \"491789XXXXXX3456\"\n  }\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/payments", "host": ["{{baseUrl}}"], "path": ["api","v1","payments"] }
+          }
+        },
+
+        {
+          "name": "07 – Valor mínimo (1 centavo)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "exec": ["const uuid = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); }); pm.variables.set('idemKey', uuid());"] }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 202]));",
+                  "pm.test('Responde em menos de 1 segundo', () => pm.expect(pm.response.responseTime).to.be.below(1000));",
+                  "pm.test('Amount é 1', () => pm.expect(pm.response.json().amount).to.eql(1));",
+                  "pm.test('transaction_id presente', () => pm.expect(pm.response.json()).to.have.property('transaction_id'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{apiKey}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 1,\n  \"currency\": \"BRL\",\n  \"idempotency_key\": \"{{idemKey}}\",\n  \"payment_method\": {\n    \"card_token_id\": \"tok-min-value-006\",\n    \"masked_card\": \"411111XXXXXX1111\"\n  }\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/payments", "host": ["{{baseUrl}}"], "path": ["api","v1","payments"] }
+          }
+        },
+
+        {
+          "name": "08 – Sem masked_card (campo opcional)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "exec": ["const uuid = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); }); pm.variables.set('idemKey', uuid());"] }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 202]));",
+                  "pm.test('Responde em menos de 1 segundo', () => pm.expect(pm.response.responseTime).to.be.below(1000));",
+                  "pm.test('transaction_id presente', () => pm.expect(pm.response.json()).to.have.property('transaction_id'));",
+                  "pm.test('masked_card nulo ou ausente na resposta', () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.masked_card == null || b.masked_card === undefined).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{apiKey}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 3300,\n  \"currency\": \"BRL\",\n  \"idempotency_key\": \"{{idemKey}}\",\n  \"payment_method\": {\n    \"card_token_id\": \"tok-no-masked-007\"\n  }\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/payments", "host": ["{{baseUrl}}"], "path": ["api","v1","payments"] }
+          }
+        },
+
+        {
+          "name": "09 – Alto valor R$499 (abaixo do threshold de risco)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "exec": ["const uuid = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); }); pm.variables.set('idemKey', uuid());"] }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 202]));",
+                  "pm.test('Responde em menos de 1 segundo', () => pm.expect(pm.response.responseTime).to.be.below(1000));",
+                  "pm.test('Amount correto (49900)', () => pm.expect(pm.response.json().amount).to.eql(49900));",
+                  "pm.test('transaction_id presente', () => pm.expect(pm.response.json()).to.have.property('transaction_id'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{apiKey}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 49900,\n  \"currency\": \"BRL\",\n  \"idempotency_key\": \"{{idemKey}}\",\n  \"payment_method\": {\n    \"card_token_id\": \"tok-high-value-008\",\n    \"masked_card\": \"411111XXXXXX1111\"\n  }\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/payments", "host": ["{{baseUrl}}"], "path": ["api","v1","payments"] }
+          }
+        },
+
+        {
+          "name": "10 – Transação completa (todos os campos opcionais)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "exec": ["const uuid = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); }); pm.variables.set('idemKey', uuid());"] }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 202]));",
+                  "pm.test('Responde em menos de 1 segundo', () => pm.expect(pm.response.responseTime).to.be.below(1000));",
+                  "pm.test('transaction_id presente', () => pm.expect(pm.response.json()).to.have.property('transaction_id'));",
+                  "pm.test('created_at presente', () => pm.expect(pm.response.json()).to.have.property('created_at'));",
+                  "pm.test('updated_at presente', () => pm.expect(pm.response.json()).to.have.property('updated_at'));",
+                  "pm.test('idempotency_key na resposta', () => pm.expect(pm.response.json()).to.have.property('idempotency_key'));",
+                  "pm.test('Currency MXN', () => pm.expect(pm.response.json().currency).to.eql('MXN'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{apiKey}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 15000,\n  \"currency\": \"MXN\",\n  \"idempotency_key\": \"{{idemKey}}\",\n  \"payment_method\": {\n    \"card_token_id\": \"tok-full-request-009\",\n    \"masked_card\": \"541333XXXXXX1115\"\n  },\n  \"customer_id\": \"f47ac10b-58cc-4372-a567-0e02b2c3d479\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/payments", "host": ["{{baseUrl}}"], "path": ["api","v1","payments"] }
+          }
+        },
+
+        {
+          "name": "11 – Aprovar 3DS (CHALLENGE_PENDING → AUTHENTICATED)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{apiKey}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"{{lastTransactionId}}\",\n  \"auth_status\": \"approved\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/payments/3ds-callback", "host": ["{{baseUrl}}"], "path": ["api","v1","payments","3ds-callback"] }
+          }
+        },
+
+        {
+          "name": "12 – Recusar 3DS (CHALLENGE_PENDING → DECLINED)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{apiKey}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"{{lastTransactionId}}\",\n  \"auth_status\": \"declined\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/payments/3ds-callback", "host": ["{{baseUrl}}"], "path": ["api","v1","payments","3ds-callback"] }
+          }
+        }
+
+      ]
+    },
+
+    {
+      "name": "❌ Cenários de Erro",
+      "item": [
+
+        {
+          "name": "11 – Sem header Authorization (→ 401)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "exec": ["const uuid = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); }); pm.variables.set('idemKey', uuid());"] }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 Unauthorized', () => pm.response.to.have.status(401));",
+                  "pm.test('Responde rapidamente mesmo no erro', () => pm.expect(pm.response.responseTime).to.be.below(1000));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 5000,\n  \"currency\": \"BRL\",\n  \"idempotency_key\": \"{{idemKey}}\",\n  \"payment_method\": {\n    \"card_token_id\": \"tok-no-auth-010\"\n  }\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/payments", "host": ["{{baseUrl}}"], "path": ["api","v1","payments"] }
+          }
+        },
+
+        {
+          "name": "12 – API key inválida (→ 401)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "exec": ["const uuid = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); }); pm.variables.set('idemKey', uuid());"] }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 para chave inválida', () => pm.response.to.have.status(401));",
+                  "pm.test('Responde rapidamente', () => pm.expect(pm.response.responseTime).to.be.below(1000));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer chave-invalida-xpto-123" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 5000,\n  \"currency\": \"BRL\",\n  \"idempotency_key\": \"{{idemKey}}\",\n  \"payment_method\": {\n    \"card_token_id\": \"tok-wrong-key-011\"\n  }\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/payments", "host": ["{{baseUrl}}"], "path": ["api","v1","payments"] }
+          }
+        },
+
+        {
+          "name": "13 – Amount zero (→ 400)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "exec": ["const uuid = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); }); pm.variables.set('idemKey', uuid());"] }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 para amount zero', () => pm.response.to.have.status(400));",
+                  "pm.test('Responde rapidamente', () => pm.expect(pm.response.responseTime).to.be.below(1000));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{apiKey}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 0,\n  \"currency\": \"BRL\",\n  \"idempotency_key\": \"{{idemKey}}\",\n  \"payment_method\": {\n    \"card_token_id\": \"tok-zero-amount-012\"\n  }\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/payments", "host": ["{{baseUrl}}"], "path": ["api","v1","payments"] }
+          }
+        },
+
+        {
+          "name": "14 – Moeda inválida XYZ (→ 400)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "exec": ["const uuid = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); }); pm.variables.set('idemKey', uuid());"] }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 para moeda inválida', () => pm.response.to.have.status(400));",
+                  "pm.test('Responde rapidamente', () => pm.expect(pm.response.responseTime).to.be.below(1000));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{apiKey}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 5000,\n  \"currency\": \"XYZ\",\n  \"idempotency_key\": \"{{idemKey}}\",\n  \"payment_method\": {\n    \"card_token_id\": \"tok-bad-currency-013\"\n  }\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/payments", "host": ["{{baseUrl}}"], "path": ["api","v1","payments"] }
+          }
+        },
+
+        {
+          "name": "15 – Sem payment_method (→ 400)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "exec": ["const uuid = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); }); pm.variables.set('idemKey', uuid());"] }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 sem payment_method', () => pm.response.to.have.status(400));",
+                  "pm.test('Responde rapidamente', () => pm.expect(pm.response.responseTime).to.be.below(1000));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{apiKey}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 5000,\n  \"currency\": \"BRL\",\n  \"idempotency_key\": \"{{idemKey}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/payments", "host": ["{{baseUrl}}"], "path": ["api","v1","payments"] }
+          }
+        }
+
+      ]
+    }
+  ]
+}
