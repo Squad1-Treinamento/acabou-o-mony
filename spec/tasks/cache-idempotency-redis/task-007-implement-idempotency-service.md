@@ -1,10 +1,10 @@
 ---
 id: task-007
-status: planned
+status: in_progress
 links:
   - spec/tasks/index.md
-  - spec/specs/spec-002-cache-and-idempotency-layer.md
-  - spec/tech-plans/plan-002-cache-and-idempotency-layer.md
+  - spec/specs/spec-004-cache-and-idempotency-layer.md
+  - spec/tech-plans/plan-004-cache-and-idempotency-layer.md
   - spec/tasks/task-003-implement-redis-config.md
 ---
 

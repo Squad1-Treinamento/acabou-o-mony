@@ -3,8 +3,8 @@ id: task-008
 status: planned
 links:
   - spec/tasks/index.md
-  - spec/specs/spec-002-cache-and-idempotency-layer.md
-  - spec/tech-plans/plan-002-cache-and-idempotency-layer.md
+  - spec/specs/spec-004-cache-and-idempotency-layer.md
+  - spec/tech-plans/plan-004-cache-and-idempotency-layer.md
   - spec/tasks/task-007-implement-idempotency-service.md
 ---
 

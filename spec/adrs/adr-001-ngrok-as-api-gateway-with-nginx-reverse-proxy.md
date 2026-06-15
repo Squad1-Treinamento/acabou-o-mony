@@ -3,8 +3,8 @@ id: adr-001
 status: Aceita
 links:
   - spec/adrs/index.md
-  - spec/specs/spec-001-entry-point-with-ngrok-and-nginx.md
-  - spec/tech-plans/plan-001-entry-point-with-ngrok-and-nginx.md
+  - spec/specs/spec-003-entry-point-with-ngrok-and-nginx.md
+  - spec/tech-plans/plan-003-entry-point-with-ngrok-and-nginx.md
 ---
 # ADR-001 - Usar ngrok como API Gateway e Nginx como Reverse Proxy e Load Balancer
 

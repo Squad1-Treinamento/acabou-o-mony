@@ -1,10 +1,10 @@
 ---
 id: task-008
-status: planned
+status: in_progress
 links:
   - spec/tasks/index.md
-  - spec/tech-plans/plan-001-3ds-mfa-auth-engine.md
-  - spec/specs/spec-001-3ds-mfa-auth-engine.md
+  - spec/tech-plans/plan-002-3ds-mfa-auth-engine.md
+  - spec/specs/spec-002-3ds-mfa-auth-engine.md
 ---
 # Document 3DS Engine Configuration Properties
 

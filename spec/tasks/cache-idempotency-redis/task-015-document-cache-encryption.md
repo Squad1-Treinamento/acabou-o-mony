@@ -3,10 +3,10 @@ id: task-015
 status: planned
 links:
   - spec/tasks/index.md
-  - spec/specs/spec-002-cache-and-idempotency-layer.md
-  - spec/tech-plans/plan-002-cache-and-idempotency-layer.md
-  - spec/tasks/task-013-implement-aes-encryptor.md
-  - spec/tasks/task-014-configure-encryption-validation.md
+  - spec/specs/spec-004-cache-and-idempotency-layer.md
+  - spec/tech-plans/plan-004-cache-and-idempotency-layer.md
+  - spec/tasks/cache-idempotency-redis/task-013-implement-aes-encryptor.md
+  - spec/tasks/cache-idempotency-redis/task-014-configure-encryption-validation.md
 ---
 
 # Document Cache Encryption Usage and Best Practices
@@ -28,9 +28,9 @@ links:
 - Examples and usage
 
 **References:**
-- `spec/specs/spec-002-cache-and-idempotency-layer.md`
-- `spec/tech-plans/plan-002-cache-and-idempotency-layer.md`
-- `spec/adrs/adr-002-cache-and-idempotency-layer.md`
+- `spec/specs/spec-004-cache-and-idempotency-layer.md`
+- `spec/tech-plans/plan-004-cache-and-idempotency-layer.md`
+- `spec/adrs/adr-003-cache-and-idempotency-layer.md`
 
 ## Scope
 
@@ -118,10 +118,10 @@ links:
 - Example: Verify ele: Disable encryption
 
 **AC-8: Links to Related Documentation**
-- Links to `spec/specs/spec-002-cache-and-idempotency-layer.md`
+- Links to `spec/specs/spec-004-cache-and-idempotency-layer.md`
 - Linkncryption is working
-- Examps to `spec/tech-plans/plan-002-cache-and-idempotency-layer.md`
-- Links to `spec/adrs/adr-002-cache-and-idempotency-layer.md`
+- Examps to `spec/tech-plans/plan-004-cache-and-idempotency-layer.md`
+- Links to `spec/adrs/adr-003-cache-and-idempotency-layer.md`
 
 ### Failure Cases
 

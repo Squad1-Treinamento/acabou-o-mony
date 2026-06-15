@@ -42,6 +42,11 @@ grouped by feature branch (`tasks/<branch>/`).
   - Components: PayloadHashingService, IdempotencyService, deterministic SHA-256 hashing
   - Coverage: Hash computation, duplicate detection, payload validation; 31+ tests
 
+- **task-008-redis-idempotency-coordination.md** — Redis-based idempotency coordination
+  - Status: ✅ COMPLETED
+  - Components: RedisPaymentResponseCache, PaymentResponseCache interface, RedisTemplate integration
+  - Coverage: Cache storage/retrieval, TTL handling, cache invalidation, merchant-scoped keys; 11 unit tests
+
 - **task-009-db-idempotency-enforcement.md** — Database-level idempotency enforcement
   - Status: ✅ COMPLETED
   - Components: DuplicatePaymentHandler, PaymentResponseDTO, UNIQUE constraint enforcement
@@ -77,25 +82,27 @@ grouped by feature branch (`tasks/<branch>/`).
   - Components: ReconciliationStateTransitionHandler, status mapping, audit logging, outbox events
   - Coverage: Atomic transactions, optimistic locking, idempotent reconciliation; 6 unit tests, 14 integration tests
 
-### In Progress Tasks
+### Completed Tasks (continued)
 
 - **task-016-outbox-persistence.md** — Outbox pattern persistence
-  - Status: 🔄 IN PROGRESS
-  - Description: Transactional outbox persistence for payment outcomes and webhook workflow
-
-### Not Started Tasks
+  - Status: ✅ COMPLETED
+  - Components: OutboxEvent entity, OutboxEventService, atomic persistence with transaction updates
+  - Coverage: Atomic persistence, transaction rollback, status tracking, independent versioning; 65 tests
 
 - **task-017-webhook-dispatch-worker.md** — Webhook dispatch worker
-  - Status: ⏳ NOT STARTED
-  - Description: Background worker for reliable delivery and retry of outgoing webhooks
+  - Status: ✅ COMPLETED
+  - Components: WebhookDispatchWorker, WebhookDispatchService, WebhookSignatureService, HMAC-SHA256 signatures
+  - Coverage: Polling dispatch, exponential backoff (1s-16s), 5 retries, SLA monitoring, virtual threads; 25 tests
 
 - **task-018-risk-evaluation.md** — Risk evaluation
-  - Status: ⏳ NOT STARTED
-  - Description: Merchant and transaction risk evaluation with configurable rules
+  - Status: ✅ COMPLETED
+  - Components: RiskLevel enum, RiskRule interface, AmountRiskRule, NewCardRiskRule, VelocityRiskRule, RiskEvaluationService
+  - Coverage: Pluggable rules, OR logic, configurable thresholds, fail-safe defaults, runtime rule management; 20 tests
 
 - **task-019-structured-audit-logging.md** — Structured audit logging
-  - Status: ⏳ NOT STARTED
-  - Description: Structured audit logging with masking and tamper-detection checksums
+  - Status: ✅ COMPLETED
+  - Components: AuditEventType enum, DataMaskingService, StructuredAuditEvent, StructuredAuditLogger, SHA256 checksums
+  - Coverage: 56 event types, PII masking (card, API key, email, phone, document), tamper detection, immutable logs; 30 tests
 
 ## Cache e Idempotency Layer com Redis Tasks
 
@@ -116,47 +123,62 @@ Tasks in `spec/tasks/cache-idempotency-redis/`:
 - **task-014-configure-encryption-validation.md** — Encryption key validation on startup
 - **task-015-document-cache-encryption.md** — Cache encryption documentation
 
-**Note:** task-012 (Bouncy Castle dependency) foi removido — `bcprov-jdk18on` já está no `pom.xml`.
+- **task-012-add-encryption-maven-dependency.md** � Add encryption Maven dependencies (Bouncy Castle)
 
 ## Auth Engine Core Tasks
 
+Tasks in `spec/tasks/auth-engine-core/`:
+
+- **task-001-scaffold-spring-boot-project.md** — Scaffold Spring Boot project ✅ COMPLETED
+- **task-002-redis-session-repository.md** — Redis session repository ✅ COMPLETED
+- **task-003-jwt-utility.md** — JWT utility ✅ COMPLETED
+- **task-004-challenge-initiation-endpoint.md** — Challenge initiation endpoint ✅ COMPLETED
+- **task-005-mfa-verification.md** — MFA verification ✅ COMPLETED
+- **task-006-async-callback-core.md** — Async callback to core ✅ COMPLETED
+- **task-007-integration-tests.md** — Integration tests ✅ COMPLETED
+- **task-008-configuration-documentation.md** — Configuration documentation 🔄 IN PROGRESS
+- **task-009-structured-audit-logging.md** — Structured audit logging ✅ COMPLETED
+- **task-010-quality-test-improvements.md** — Quality test improvements 🔄 IN PROGRESS
+- **task-011-run-tests-and-update-report.md** — Run tests and update report ⏳ NOT STARTED
+
+**Note:** Additional notes, planning docs, and reports are in `notes/`.
 ## 3DS ↔ Core Payment Integration Tasks
 
 ### 3DS Engine (Additive)
 
-- **task-3ds-01-jwt-generate-token.md** — Add `JwtTokenProvider.generateToken` method
-  - Status: ⏳ NOT STARTED
+- **task-001-jwt-generate-token.md** — Add `JwtTokenProvider.generateToken` method
+  - Status: ✅ COMPLETED
   - Components: `generateToken(challengeId, txId, merchantId, amount)` using existing key and expirationSeconds
   - Depends on: nothing
 
-- **task-3ds-02-session-request-dtos-and-create-session.md** — ThreeDsSession DTOs and `ChallengeSessionService.createSession`
-  - Status: ⏳ NOT STARTED
+- **task-002-session-request-dtos-and-create-session.md** — ThreeDsSession DTOs and `ChallengeSessionService.createSession`
+  - Status: ✅ COMPLETED
   - Components: `ThreeDsSessionRequest`, `ThreeDsSessionResponse` records; `createSession` method; constructor update
-  - Depends on: task-3ds-01
+  - Depends on: task-001
 
-- **task-3ds-03-session-controller.md** — Create `ThreeDsSessionController` `POST /api/v1/3ds/sessions`
-  - Status: ⏳ NOT STARTED
+- **task-003-session-controller.md** — Create `ThreeDsSessionController` `POST /api/v1/3ds/sessions`
+  - Status: ✅ COMPLETED
   - Components: `ThreeDsSessionController` (pure transport, 201 Created, API-key protected)
-  - Depends on: task-3ds-02
+  - Depends on: task-002
 
 ### Core Payment (New Components)
 
-- **task-core-00-wire-payment-controller.md** — Wire `PaymentController` to call `processPayment()`
-  - Status: ⏳ NOT STARTED
+- **task-004-wire-payment-controller.md** — Wire `PaymentController` to call `processPayment()`
+  - Status: ✅ COMPLETED
   - Components: `PaymentOrchestrationService` injection, conditional 202 for `CHALLENGE_PENDING`
   - Depends on: nothing (parallelize with 3DS Engine tasks)
 
-- **task-core-01-three-ds-client.md** — `ThreeDsClient`, `challengeId` column, `PaymentResponseDTO` update
-  - Status: ⏳ NOT STARTED
+- **task-005-three-ds-client.md** — `ThreeDsClient`, `challengeId` column, `PaymentResponseDTO` update
+  - Status: ✅ COMPLETED
   - Components: `ThreeDsClient` (RestTemplate, risk fallback), Flyway migration V4, `Transaction.challengeId/challengeAcsUrl`, `PaymentResponseDTO` fields
-  - Depends on: task-3ds-03, task-core-00
+  - Depends on: task-003, task-004
 
-- **task-core-02-callback-handler.md** — `ThreeDsCompletedEvent`, callback handler, orchestration methods
-  - Status: ⏳ NOT STARTED
+- **task-006-callback-handler.md** — `ThreeDsCompletedEvent`, callback handler, orchestration methods
+  - Status: ✅ COMPLETED
   - Components: `ThreeDsCompletedEvent`, `ThreeDsCallbackController`, `completeThreeDsAuthentication()`, `resumePaymentAfterAuth()`
-  - Depends on: task-core-01
+  - Depends on: task-005
 
-- **task-core-03-payment-finalizer.md** — `ThreeDsPaymentFinalizer` and `@EnableAsync`
-  - Status: ⏳ NOT STARTED
+- **task-007-payment-finalizer.md** — `ThreeDsPaymentFinalizer` and `@EnableAsync`
+  - Status: ✅ COMPLETED
   - Components: `ThreeDsPaymentFinalizer` (`@Async @TransactionalEventListener(AFTER_COMMIT)`)
-  - Depends on: task-core-02
+  - Depends on: task-006

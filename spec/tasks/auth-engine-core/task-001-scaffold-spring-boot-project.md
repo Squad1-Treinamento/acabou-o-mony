@@ -1,10 +1,10 @@
 ---
 id: task-001
-status: planned
+status: completed
 links:
   - spec/tasks/index.md
-  - spec/tech-plans/plan-001-3ds-mfa-auth-engine.md
-  - spec/specs/spec-001-3ds-mfa-auth-engine.md
+  - spec/tech-plans/plan-002-3ds-mfa-auth-engine.md
+  - spec/specs/spec-002-3ds-mfa-auth-engine.md
 ---
 # Scaffold Spring Boot WebFlux Project for 3DS Engine
 
