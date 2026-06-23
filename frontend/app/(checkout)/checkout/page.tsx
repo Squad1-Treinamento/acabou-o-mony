@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { CheckoutShell } from "@/components/checkout/CheckoutShell";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { ShieldCheck } from "lucide-react";
@@ -9,7 +10,7 @@ export default function CheckoutPage() {
       {/* Header */}
       <header className="bg-primary text-white">
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
-          <span className="font-semibold text-base tracking-tight">Acabou o Mony</span>
+          <Link href="/" className="font-semibold text-base tracking-tight hover:text-white/80 transition-colors">Acabou o Mony</Link>
           <div className="flex items-center gap-1.5 text-white/60 text-xs">
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>Checkout seguro</span>

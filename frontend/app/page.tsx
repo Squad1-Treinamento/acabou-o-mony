@@ -7,7 +7,7 @@ export default function Home() {
       {/* Header */}
       <header className="border-b border-white/10">
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center">
-          <span className="font-semibold text-base tracking-tight">Acabou o Mony</span>
+          <Link href="/" className="font-semibold text-base tracking-tight hover:text-white/80 transition-colors">Acabou o Mony</Link>
         </div>
       </header>
 
