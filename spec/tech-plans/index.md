@@ -8,3 +8,4 @@ Plans should be small enough to execute in short iterations.
 - plan-004-cache-and-idempotency-layer.md — cache e idempotency layer implementation plan
 - plan-005-3ds-core-payment-integration.md — bidirectional integration between Core Payment and 3DS Engine: session creation, callback handling, and async finalization
 - plan-002-3ds-mfa-auth-engine.md — 3DS/MFA auth engine implementation plan
+- plan-006-frontend.md — frontend Next.js 14: checkout multi-step e dashboard de transacoes do lojista

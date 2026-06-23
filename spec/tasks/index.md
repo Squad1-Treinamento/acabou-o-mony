@@ -142,6 +142,27 @@ Tasks in `spec/tasks/auth-engine-core/`:
 - **task-011-run-tests-and-update-report.md** — Run tests and update report ⏳ NOT STARTED
 
 **Note:** Additional notes, planning docs, and reports are in `notes/`.
+## Frontend Tasks (front-end-paty)
+
+Tasks em `spec/tasks/front-end-paty/`:
+
+- **task-001-scaffold-nextjs.md** — Scaffold Next.js 14 project with pnpm, TypeScript, Tailwind, and shadcn/ui
+- **task-002-design-system.md** — Implement design.json tokens in Tailwind config and global CSS
+- **task-003-shadcn-components.md** — Install and override shadcn/ui base components
+- **task-004-shared-components.md** — Build StepIndicator, SecurityBadge, LoadingSpinner, EmptyState, ErrorState, CopyButton
+- **task-005-api-client-types.md** — Build API client, TypeScript types, formatters, and idempotency utilities
+- **task-006-use-payment-hook.md** — Build usePayment hook with TanStack Query mutation and polling
+- **task-007-checkout-shell-form.md** — Build CheckoutShell state machine and StepPaymentForm
+- **task-008-step-processing.md** — Build StepProcessing animated loading component
+- **task-009-step-three-ds.md** — Build StepThreeDs redirect component and wire CHALLENGE_PENDING flow
+- **task-010-step-success-error.md** — Build StepSuccess and StepError terminal screens
+- **task-011-wire-checkout-route.md** — Wire checkout route, root layout, and QueryClientProvider
+- **task-012-transaction-table.md** — Build TransactionTable, FilterBar, TransactionCard, and useTransactions hook
+- **task-013-status-badge-detail.md** — Build StatusBadge and TransactionDetail with polling
+- **task-014-wire-dashboard-routes.md** — Wire dashboard routes: login, dashboard, and transaction detail
+- **task-015-review-impeccable.md** — Review all screens with impeccable skill and apply improvements
+- **task-016-semantic-commits.md** — Create semantic commits for all frontend work
+
 ## 3DS ↔ Core Payment Integration Tasks
 
 ### 3DS Engine (Additive)

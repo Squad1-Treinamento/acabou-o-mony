@@ -8,3 +8,5 @@ rules needed for implementation.
 - spec-003-entry-point-with-ngrok-and-nginx.md — local entry point with ngrok and nginx
 - spec-004-cache-and-idempotency-layer.md — cache e idempotency layer functional requirements
 - spec-005-3ds-core-payment-integration.md — bidirectional integration between Core Payment (Spring MVC/JPA) and 3DS Engine: session creation, idempotent callback, async Spring Event finalization
+- spec-006-frontend-checkout.md — customer-facing multi-step checkout flow: payment form, processing, 3DS challenge redirect, success and error terminal screens
+- spec-007-merchant-dashboard.md — merchant-facing transaction dashboard: API key auth, transaction list with filters and auto-refresh, detail view, status badges, webhook delivery status
