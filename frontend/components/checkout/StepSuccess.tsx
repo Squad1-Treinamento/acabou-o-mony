@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { CheckCircle } from "lucide-react";
+import Link from "next/link";
+import { CheckCircle, ShoppingBag } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CopyButton } from "@/components/shared/CopyButton";
@@ -69,6 +70,14 @@ export function StepSuccess({ payment }: StepSuccessProps) {
           </div>
         </CardContent>
       </Card>
+
+      <Link
+        href="/store"
+        className="inline-flex items-center gap-2 h-11 px-6 rounded-btn bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors w-full justify-center"
+      >
+        <ShoppingBag className="w-4 h-4" />
+        Continuar comprando
+      </Link>
     </div>
   );
 }

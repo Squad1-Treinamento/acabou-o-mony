@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { StepIndicator } from "@/components/shared/StepIndicator";
 import { StepPaymentForm } from "./StepPaymentForm";
 import { StepProcessing } from "./StepProcessing";
-import { StepThreeDs } from "./StepThreeDs";
 import { StepSuccess } from "./StepSuccess";
 import { StepError } from "./StepError";
 import { useCreatePayment, useGetPayment, usePaymentTimeout } from "@/hooks/usePayment";
@@ -12,14 +11,13 @@ import { getOrCreateCheckoutKey, clearCheckoutSession } from "@/lib/utils/idempo
 import { TERMINAL_STATUSES } from "@/types/payment";
 import type { PaymentResponse } from "@/types/payment";
 
-type CheckoutStep = "FORM" | "PROCESSING" | "THREE_DS" | "SUCCESS" | "ERROR";
+type CheckoutStep = "FORM" | "PROCESSING" | "SUCCESS" | "ERROR";
 type ErrorType = "DECLINED" | "FAILED" | "NETWORK" | "UNKNOWN_TIMEOUT";
 
 const STEP_LABELS = ["Dados", "Processando", "Confirmação"];
 const STEP_INDEX: Record<CheckoutStep, number> = {
   FORM: 0,
   PROCESSING: 1,
-  THREE_DS: 1,
   SUCCESS: 2,
   ERROR: 2,
 };
@@ -27,14 +25,13 @@ const STEP_INDEX: Record<CheckoutStep, number> = {
 interface CheckoutShellProps {
   amount: number;
   currency: string;
-  cardTokenId?: string;
-  maskedCard?: string;
+  onComplete?: () => void;
 }
 
-export function CheckoutShell({ amount, currency, cardTokenId, maskedCard }: CheckoutShellProps) {
+export function CheckoutShell({ amount, currency, onComplete }: CheckoutShellProps) {
   const [step, setStep] = useState<CheckoutStep>("FORM");
   const [transactionId, setTransactionId] = useState<string | null>(null);
-  const [acsUrl, setAcsUrl] = useState<string | null>(null);
+  const [awaitingAuth, setAwaitingAuth] = useState(false);
   const [errorType, setErrorType] = useState<ErrorType>("FAILED");
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const [successData, setSuccessData] = useState<PaymentResponse | null>(null);
@@ -74,9 +71,11 @@ export function CheckoutShell({ amount, currency, cardTokenId, maskedCard }: Che
     if (TERMINAL_STATUSES.includes(data.status)) {
       if (data.status === "COMPLETED") {
         clearCheckoutSession();
+        onComplete?.();
         setSuccessData(data);
         setStep("SUCCESS");
       } else {
+        clearCheckoutSession();
         setErrorType(data.status === "DECLINED" ? "DECLINED" : "FAILED");
         setErrorMessage(data.message);
         setStep("ERROR");
@@ -95,26 +94,28 @@ export function CheckoutShell({ amount, currency, cardTokenId, maskedCard }: Che
             amount,
             currency,
             idempotency_key: idempotencyKey,
-            payment_method: { card_token_id: formData.card_token_id, masked_card: maskedCard },
+            payment_method: { card_token_id: formData.card_token_id },
             customer_email: formData.customer_email || undefined,
           },
           idempotencyKey,
         });
 
-        if (result.status === "CHALLENGE_PENDING" && result.acs_url) {
+        if (result.status === "CHALLENGE_PENDING") {
           sessionStorage.setItem("checkout_transaction_id", result.transaction_id);
           if (result.challenge_id) {
             sessionStorage.setItem("checkout_challenge_id", result.challenge_id);
           }
-          setAcsUrl(result.acs_url);
           setTransactionId(result.transaction_id);
-          setStep("THREE_DS");
+          setAwaitingAuth(true);
+          setPollStart(Date.now());
         } else if (TERMINAL_STATUSES.includes(result.status)) {
           if (result.status === "COMPLETED") {
             clearCheckoutSession();
+            onComplete?.();
             setSuccessData(result);
             setStep("SUCCESS");
           } else {
+            clearCheckoutSession();
             setErrorType(result.status === "DECLINED" ? "DECLINED" : "FAILED");
             setErrorMessage(result.message);
             setStep("ERROR");
@@ -124,6 +125,7 @@ export function CheckoutShell({ amount, currency, cardTokenId, maskedCard }: Che
           setPollStart(Date.now());
         }
       } catch (err: unknown) {
+        clearCheckoutSession();
         const isApiError = err !== null && typeof err === "object" && "status" in err;
         if (isApiError) {
           const status = (err as { status: number }).status;
@@ -141,7 +143,7 @@ export function CheckoutShell({ amount, currency, cardTokenId, maskedCard }: Che
         setStep("ERROR");
       }
     },
-    [amount, currency, maskedCard, createMutation]
+    [amount, currency, createMutation]
   );
 
   const handleRetry = useCallback(() => {
@@ -157,8 +159,6 @@ export function CheckoutShell({ amount, currency, cardTokenId, maskedCard }: Che
         <StepPaymentForm
           amount={amount}
           currency={currency}
-          cardTokenId={cardTokenId}
-          maskedCard={maskedCard}
           onSubmit={handleFormSubmit}
           isSubmitting={createMutation.isPending}
         />
@@ -166,16 +166,8 @@ export function CheckoutShell({ amount, currency, cardTokenId, maskedCard }: Che
 
       {step === "PROCESSING" && (
         <StepProcessing
-          message={
-            transactionId && sessionStorage.getItem("checkout_transaction_id")
-              ? "Verificando autenticação..."
-              : "Processando pagamento..."
-          }
+          message={awaitingAuth ? "Aguardando autenticação..." : "Processando pagamento..."}
         />
-      )}
-
-      {step === "THREE_DS" && acsUrl && (
-        <StepThreeDs acsUrl={acsUrl} />
       )}
 
       {step === "SUCCESS" && successData && (
