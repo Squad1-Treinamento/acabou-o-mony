@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -41,16 +39,6 @@ export function TransactionDetail({ transactionId }: TransactionDetailProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Voltar
-        </Link>
-      </div>
-
       {tx.status === "UNKNOWN" && (
         <Alert className="border-[#D97706]/30 bg-[#FFFBEB]">
           <AlertDescription className="text-[#D97706] text-sm">

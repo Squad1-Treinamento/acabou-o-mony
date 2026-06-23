@@ -17,8 +17,11 @@ import org.slf4j.LoggerFactory;
 
 import jakarta.validation.Valid;
 import java.time.Instant;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * REST controller for payment processing.
@@ -96,6 +99,33 @@ public class PaymentController {
      * @param authHeader The Authorization header (API key)
      * @return ResponseEntity with payment response
      */
+    @GetMapping
+    public ResponseEntity<List<PaymentResponseDTO>> listPayments(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+        UUID merchantId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        logger.info("Transaction list request received for merchant={}", merchantId);
+
+        List<PaymentResponseDTO> dtos = transactionRepository.findByMerchantId(merchantId)
+                .stream()
+                .sorted(Comparator.comparing(Transaction::getCreatedAt).reversed())
+                .map(tx -> PaymentResponseDTO.builder()
+                        .transactionId(tx.getId())
+                        .status(tx.getStatus())
+                        .amount(tx.getAmount())
+                        .currency(tx.getCurrency())
+                        .maskedCard(tx.getMaskedCard())
+                        .idempotencyKey(tx.getIdempotencyKey())
+                        .challengeId(tx.getChallengeId())
+                        .acsUrl(tx.getChallengeAcsUrl())
+                        .createdAt(tx.getCreatedAt())
+                        .updatedAt(tx.getUpdatedAt())
+                        .build())
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(dtos);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<PaymentResponseDTO> getPayment(
             @PathVariable UUID id,
