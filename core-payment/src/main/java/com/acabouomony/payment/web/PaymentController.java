@@ -96,6 +96,32 @@ public class PaymentController {
      * @param authHeader The Authorization header (API key)
      * @return ResponseEntity with payment response
      */
+    @GetMapping("/{id}")
+    public ResponseEntity<PaymentResponseDTO> getPayment(
+            @PathVariable UUID id,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+        logger.info("Payment status request received: transaction_id={}", id);
+
+        return transactionRepository.findById(id)
+                .map(tx -> {
+                    PaymentResponseDTO dto = PaymentResponseDTO.builder()
+                            .transactionId(tx.getId())
+                            .status(tx.getStatus())
+                            .amount(tx.getAmount())
+                            .currency(tx.getCurrency())
+                            .maskedCard(tx.getMaskedCard())
+                            .idempotencyKey(tx.getIdempotencyKey())
+                            .challengeId(tx.getChallengeId())
+                            .acsUrl(tx.getChallengeAcsUrl())
+                            .createdAt(tx.getCreatedAt())
+                            .updatedAt(tx.getUpdatedAt())
+                            .build();
+                    return ResponseEntity.ok(dto);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping
     public ResponseEntity<PaymentResponseDTO> createPayment(
             @Valid @RequestBody PaymentRequest request,
