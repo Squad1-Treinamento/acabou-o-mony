@@ -1,13 +1,23 @@
+import Link from "next/link";
 import { ApiKeyForm } from "@/components/dashboard/ApiKeyForm";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, ArrowLeft } from "lucide-react";
 
 export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left — brand panel */}
       <div className="bg-primary text-white flex flex-col justify-between p-8 md:w-2/5 md:min-h-screen">
-        <div>
-          <span className="font-semibold text-lg tracking-tight">Acabou o Mony</span>
+        <div className="flex items-center justify-between">
+          <Link href="/" className="font-semibold text-lg tracking-tight hover:text-white/80 transition-colors">
+            Acabou o Mony
+          </Link>
+          <Link
+            href="/"
+            className="flex items-center gap-1.5 text-white/60 hover:text-white transition-colors text-sm"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar
+          </Link>
         </div>
 
         <div className="space-y-4 py-8 md:py-0">

@@ -24,23 +24,32 @@ interface StatCardProps {
   value: number;
   color: string;
   bg: string;
+  tooltip: string;
   onClick?: () => void;
   active?: boolean;
 }
 
-function StatCard({ label, value, color, bg, onClick, active }: StatCardProps) {
+function StatCard({ label, value, color, bg, tooltip, onClick, active }: StatCardProps) {
   return (
-    <button
-      onClick={onClick}
-      className={`text-left rounded-card p-4 border transition-all ${
-        active
-          ? `${bg} border-current ring-2 ring-offset-1`
-          : "bg-white border-border hover:border-current/30"
-      } ${color}`}
-    >
-      <p className="text-2xl font-bold tabular-nums">{value}</p>
-      <p className="text-xs font-medium mt-0.5 opacity-70">{label}</p>
-    </button>
+    <div className="relative group">
+      <button
+        onClick={onClick}
+        className={`w-full text-left rounded-card p-4 border transition-all ${
+          active
+            ? `${bg} border-current ring-2 ring-offset-1`
+            : "bg-white border-border hover:border-current/30"
+        } ${color}`}
+      >
+        <p className="text-2xl font-bold tabular-nums">{value}</p>
+        <p className="text-xs font-medium mt-0.5 opacity-70">{label}</p>
+      </button>
+      <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50
+                      w-52 rounded-lg bg-gray-900 px-3 py-2 text-xs text-white shadow-lg
+                      opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+        {tooltip}
+        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+      </div>
+    </div>
   );
 }
 
@@ -89,6 +98,7 @@ export default function DashboardPage() {
               value={stats.completed}
               color="text-[#1F8F53]"
               bg="bg-[#EAF7F0]"
+              tooltip="Pagamentos aprovados e liquidados com sucesso pelo adquirente."
               active={activeGroup === "completed"}
               onClick={() => handleStatClick("completed")}
             />
@@ -97,6 +107,7 @@ export default function DashboardPage() {
               value={stats.pending}
               color="text-primary"
               bg="bg-primary/8"
+              tooltip="Pagamentos em processamento, aguardando validação ou autenticação 3DS."
               active={activeGroup === "pending"}
               onClick={() => handleStatClick("pending")}
             />
@@ -105,6 +116,7 @@ export default function DashboardPage() {
               value={stats.failed}
               color="text-[#DC2626]"
               bg="bg-[#FEF2F2]"
+              tooltip="Pagamentos negados pela operadora do cartão ou com erro no processamento."
               active={activeGroup === "failed"}
               onClick={() => handleStatClick("failed")}
             />
@@ -113,6 +125,7 @@ export default function DashboardPage() {
               value={stats.unknown}
               color="text-[#D97706]"
               bg="bg-[#FFFBEB]"
+              tooltip="Status incerto: o adquirente não confirmou o resultado. A reconciliação automática resolverá em breve."
               active={activeGroup === "unknown"}
               onClick={() => handleStatClick("unknown")}
             />
