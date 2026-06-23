@@ -1,0 +1,243 @@
+{
+  "designSystem": {
+    "name": "Acabou o Mony Checkout System",
+    "style": "Premium Enterprise Checkout",
+    "description": "A calm, trustworthy, conversion-focused payment experience inspired by modern SaaS checkout flows. Prioritize clarity, confidence, and simplicity over marketing-heavy visuals."
+  },
+
+  "designPrinciples": [
+    "Trust before excitement",
+    "Reduce cognitive load",
+    "Every screen has a single goal",
+    "Whitespace is a feature",
+    "Forms should feel effortless",
+    "Focus attention on completion",
+    "Communicate security constantly",
+    "Visual hierarchy through spacing instead of decoration"
+  ],
+
+  "layout": {
+    "maxWidth": "1200px",
+    "contentWidth": "480px",
+    "sectionSpacing": "120px",
+    "cardPadding": "32px",
+    "formGap": "20px",
+    "gridGap": "24px",
+    "borderRadius": "16px",
+    "containerAlignment": "centered",
+    "verticalRhythm": "consistent and spacious"
+  },
+
+  "typography": {
+    "fontFamily": "Inter",
+    "fallbacks": ["Geist", "SF Pro Display", "system-ui"],
+
+    "hero": {
+      "fontSize": "64px",
+      "fontWeight": 700,
+      "lineHeight": 1.05,
+      "letterSpacing": "-0.04em"
+    },
+
+    "h2": {
+      "fontSize": "40px",
+      "fontWeight": 600,
+      "lineHeight": 1.1
+    },
+
+    "h3": {
+      "fontSize": "20px",
+      "fontWeight": 600
+    },
+
+    "body": {
+      "fontSize": "16px",
+      "fontWeight": 400,
+      "lineHeight": 1.7
+    },
+
+    "label": {
+      "fontSize": "13px",
+      "fontWeight": 500
+    },
+
+    "helperText": {
+      "fontSize": "12px",
+      "fontWeight": 400
+    }
+  },
+
+  "colors": {
+    "background": "#F5F6F7",
+    "surface": "#FFFFFF",
+    "surfaceSecondary": "#FAFAFA",
+
+    "primary": "#0D2B1E",
+    "primaryHover": "#123726",
+
+    "success": "#1F8F53",
+    "successSoft": "#EAF7F0",
+
+    "textPrimary": "#111827",
+    "textSecondary": "#6B7280",
+
+    "border": "#E5E7EB",
+    "divider": "#F0F2F4",
+
+    "inputBackground": "#FFFFFF",
+    "inputBorder": "#DADDE2",
+
+    "warning": "#D97706",
+    "error": "#DC2626"
+  },
+
+  "cards": {
+    "background": "#FFFFFF",
+    "border": "1px solid #E5E7EB",
+    "shadow": "0 1px 3px rgba(0,0,0,0.04)",
+    "radius": "16px",
+
+    "hover": {
+      "translateY": "-2px",
+      "shadow": "0 8px 24px rgba(0,0,0,0.08)"
+    }
+  },
+
+  "buttons": {
+    "primary": {
+      "background": "#0D2B1E",
+      "text": "#FFFFFF",
+      "height": "52px",
+      "radius": "10px",
+      "fontWeight": 500,
+      "shadow": "none"
+    },
+
+    "secondary": {
+      "background": "#FFFFFF",
+      "border": "1px solid #DADDE2",
+      "text": "#111827"
+    },
+
+    "hover": {
+      "scale": "1.01",
+      "duration": "150ms"
+    }
+  },
+
+  "forms": {
+    "inputHeight": "48px",
+    "borderRadius": "8px",
+    "borderWidth": "1px",
+
+    "states": {
+      "default": "#DADDE2",
+      "focus": "#0D2B1E",
+      "success": "#1F8F53",
+      "error": "#DC2626"
+    },
+
+    "labels": {
+      "position": "top",
+      "spacing": "8px"
+    }
+  },
+
+  "checkout": {
+    "style": "multi-step",
+
+    "stepIndicator": {
+      "shape": "circle",
+      "completedColor": "#0D2B1E",
+      "inactiveColor": "#E5E7EB",
+      "connectorColor": "#DADDE2"
+    },
+
+    "paymentMethods": {
+      "display": "cards",
+      "selectionStyle": "border emphasis",
+      "activeBorder": "#0D2B1E"
+    },
+
+    "transactionStatus": {
+      "success": {
+        "icon": "check-circle",
+        "color": "#1F8F53"
+      },
+
+      "processing": {
+        "icon": "loader",
+        "color": "#0D2B1E"
+      },
+
+      "error": {
+        "icon": "alert-circle",
+        "color": "#DC2626"
+      }
+    }
+  },
+
+  "animations": {
+    "style": "subtle",
+
+    "duration": {
+      "fast": "150ms",
+      "normal": "250ms",
+      "slow": "400ms"
+    },
+
+    "use": [
+      "button hover",
+      "input focus",
+      "step transitions",
+      "checkout completion",
+      "status updates"
+    ],
+
+    "avoid": [
+      "parallax",
+      "aggressive motion",
+      "large scale effects",
+      "marketing animations"
+    ]
+  },
+
+  "imagery": {
+    "style": "minimal product-focused",
+
+    "generate": [
+      "checkout interfaces",
+      "payment approval states",
+      "transaction confirmations",
+      "merchant payment experiences",
+      "secure payment flows"
+    ],
+
+    "avoid": [
+      "crypto graphics",
+      "stock business teams",
+      "banking dashboards",
+      "abstract 3D blobs",
+      "overly futuristic visuals"
+    ]
+  },
+
+  "spacingRules": {
+    "betweenSections": "120px",
+    "betweenCards": "24px",
+    "betweenInputs": "16px",
+    "betweenLabelAndInput": "8px",
+    "betweenHeadingAndText": "16px",
+    "betweenTextAndCTA": "32px"
+  },
+
+  "overallMood": [
+    "professional",
+    "secure",
+    "minimal",
+    "reliable",
+    "premium",
+    "enterprise-ready",
+    "trustworthy"
+  ]
+}
