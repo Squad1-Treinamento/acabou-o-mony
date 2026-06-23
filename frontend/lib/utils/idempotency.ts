@@ -1,5 +1,5 @@
 export function generateIdempotencyKey(): string {
-  return "req_" + crypto.randomUUID();
+  return crypto.randomUUID();
 }
 
 export function getOrCreateCheckoutKey(): string {
