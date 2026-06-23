@@ -299,16 +299,14 @@ public class PaymentOrchestrationService {
                 transaction.setUpdatedAt(Instant.now());
 
                 // Persist transaction (version conflict checked here)
+                // Hibernate manages @Version automatically — do NOT increment manually
                 transactionRepository.save(transaction);
-
-                // Increment version after successful save (Hibernate uses old version in WHERE clause)
-                transaction.setVersion(transaction.getVersion() + 1);
 
                 // Create audit log entry (same transaction)
                 auditLogService.logStateTransition(transaction, oldStatus, newStatus, actor);
                 
-                logger.info("State transition successful: transaction_id={}, {} -> {}, version={}",
-                    transaction.getId(), oldStatus, newStatus, transaction.getVersion());
+                logger.info("State transition successful: transaction_id={}, {} -> {}",
+                    transaction.getId(), oldStatus, newStatus);
                 
                 return;  // Success
                 
