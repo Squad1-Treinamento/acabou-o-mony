@@ -2,9 +2,11 @@ export function generateIdempotencyKey(): string {
   return crypto.randomUUID();
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function getOrCreateCheckoutKey(): string {
   const existing = sessionStorage.getItem("checkout_idempotency_key");
-  if (existing) return existing;
+  if (existing && UUID_REGEX.test(existing)) return existing;
   const key = generateIdempotencyKey();
   sessionStorage.setItem("checkout_idempotency_key", key);
   return key;

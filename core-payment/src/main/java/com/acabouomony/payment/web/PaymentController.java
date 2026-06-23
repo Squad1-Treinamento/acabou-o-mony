@@ -267,6 +267,8 @@ public class PaymentController {
                             .status(saved.getStatus())
                             .amount(saved.getAmount())
                             .currency(saved.getCurrency())
+                            .challengeId(saved.getChallengeId())
+                            .acsUrl(saved.getChallengeAcsUrl())
                             .createdAt(saved.getCreatedAt())
                             .updatedAt(saved.getUpdatedAt())
                             .idempotencyKey(saved.getIdempotencyKey())
