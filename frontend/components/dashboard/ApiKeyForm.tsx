@@ -50,7 +50,7 @@ export function ApiKeyForm() {
           value={apiKey}
           onChange={(e) => setApiKey(e.target.value)}
           autoComplete="off"
-          onKeyDown={(e) => e.key === "Enter" && handleSubmit(e as unknown as React.FormEvent)}
+          className="h-[var(--height-input)] rounded-input border-input-border px-4 text-base"
         />
         {error && <p className="text-xs text-error">{error}</p>}
       </div>

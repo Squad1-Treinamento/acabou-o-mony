@@ -52,7 +52,7 @@ export function StepPaymentForm({
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} noValidate className="space-y-6">
       <Card className="rounded-card border-border shadow-sm">
-        <CardContent className="p-5 space-y-1">
+        <CardContent className="p-8 space-y-1">
           <p className="text-sm text-text-secondary">Valor a pagar</p>
           <p className="text-2xl font-semibold text-text-primary">
             {formatCurrency(amount, currency)}
@@ -65,7 +65,7 @@ export function StepPaymentForm({
         </CardContent>
       </Card>
 
-      <div className="space-y-4">
+      <div className="space-y-5">
         <div className="space-y-2">
           <Label htmlFor="card_token_id">Token do cartão</Label>
           <Input
@@ -73,6 +73,7 @@ export function StepPaymentForm({
             placeholder="tok_..."
             readOnly={!!cardTokenId}
             aria-invalid={!!errors.card_token_id}
+            className="h-[var(--height-input)] rounded-input border-input-border px-4 text-base"
             {...register("card_token_id", {
               required: "Campo obrigatório",
               maxLength: { value: 100, message: "Token muito longo" },
@@ -92,6 +93,7 @@ export function StepPaymentForm({
             type="email"
             placeholder="cliente@exemplo.com"
             aria-invalid={!!errors.customer_email}
+            className="h-[var(--height-input)] rounded-input border-input-border px-4 text-base"
             {...register("customer_email", {
               pattern: {
                 value: /^$|^[^\s@]+@[^\s@]+\.[^\s@]+$/,

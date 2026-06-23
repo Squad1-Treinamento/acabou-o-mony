@@ -81,7 +81,7 @@
   --secondary: #FAFAFA;
   --secondary-foreground: #111827;
   --muted: #F0F2F4;
-  --muted-foreground: #6B7280;
+  --muted-foreground: #5C6370;
   --accent: #EAF7F0;
   --accent-foreground: #0D2B1E;
   --destructive: #DC2626;
@@ -108,7 +108,8 @@
   --mony-warning: #D97706;
   --mony-error: #DC2626;
   --mony-text-primary: #111827;
-  --mony-text-secondary: #6B7280;
+  /* Darkened from #6B7280 to meet WCAG AA 4.5:1 on #F5F6F7 background (~5.5:1) */
+  --mony-text-secondary: #5C6370;
   --mony-divider: #F0F2F4;
   --mony-input-border: #DADDE2;
   --mony-input-bg: #FFFFFF;
@@ -120,5 +121,15 @@
   }
   body {
     @apply bg-background text-text-primary font-sans antialiased;
+  }
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }

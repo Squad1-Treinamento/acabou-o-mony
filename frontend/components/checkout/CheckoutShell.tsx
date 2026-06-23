@@ -138,7 +138,7 @@ export function CheckoutShell({ amount, currency, cardTokenId, maskedCard }: Che
   }, []);
 
   return (
-    <div className="w-full max-w-md mx-auto">
+    <div className="w-full max-w-[480px] mx-auto">
       <StepIndicator steps={STEP_LABELS} currentStep={STEP_INDEX[step]} />
 
       {step === "FORM" && (

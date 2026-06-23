@@ -17,7 +17,7 @@ interface TransactionDetailProps {
 }
 
 export function TransactionDetail({ transactionId }: TransactionDetailProps) {
-  const { data, isLoading, error, refetch } = useGetPayment(transactionId, true);
+  const { data, isLoading, error, refetch } = useGetPayment(transactionId, true, 10_000);
 
   if (isLoading) {
     return (

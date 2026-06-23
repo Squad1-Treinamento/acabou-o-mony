@@ -15,7 +15,11 @@ export function useCreatePayment() {
   });
 }
 
-export function useGetPayment(transactionId: string | null, enabled = true) {
+export function useGetPayment(
+  transactionId: string | null,
+  enabled = true,
+  pollInterval = POLL_INTERVAL_MS
+) {
   return useQuery<PaymentResponse, Error>({
     queryKey: ["payment", transactionId],
     queryFn: () => getPayment(transactionId!),
@@ -23,9 +27,9 @@ export function useGetPayment(transactionId: string | null, enabled = true) {
     staleTime: 0,
     refetchInterval: (query) => {
       const data = query.state.data;
-      if (!data) return POLL_INTERVAL_MS;
+      if (!data) return pollInterval;
       if (TERMINAL_STATUSES.includes(data.status)) return false;
-      return POLL_INTERVAL_MS;
+      return pollInterval;
     },
   });
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,6 +34,7 @@ interface TransactionTableProps {
 }
 
 export function TransactionTable({ transactions, isLoading }: TransactionTableProps) {
+  const router = useRouter();
   const [sortField, setSortField] = useState<SortField>("created_at");
   const [sortDir, setSortDir] = useState<SortDirection>("desc");
   const [page, setPage] = useState(1);
@@ -87,26 +89,29 @@ export function TransactionTable({ transactions, isLoading }: TransactionTablePr
               <TableHead>
                 <button
                   onClick={() => toggleSort("status")}
+                  aria-label={`Ordenar por status ${sortField === "status" ? (sortDir === "asc" ? "descendente" : "ascendente") : "descendente"}`}
                   className="flex items-center gap-1 text-text-secondary hover:text-text-primary"
                 >
-                  Status <ArrowUpDown className="w-3 h-3" />
+                  Status <ArrowUpDown className="w-3 h-3" aria-hidden="true" />
                 </button>
               </TableHead>
               <TableHead>
                 <button
                   onClick={() => toggleSort("amount")}
+                  aria-label={`Ordenar por valor ${sortField === "amount" ? (sortDir === "asc" ? "descendente" : "ascendente") : "descendente"}`}
                   className="flex items-center gap-1 text-text-secondary hover:text-text-primary"
                 >
-                  Valor <ArrowUpDown className="w-3 h-3" />
+                  Valor <ArrowUpDown className="w-3 h-3" aria-hidden="true" />
                 </button>
               </TableHead>
               <TableHead>Moeda</TableHead>
               <TableHead>
                 <button
                   onClick={() => toggleSort("created_at")}
+                  aria-label={`Ordenar por data ${sortField === "created_at" ? (sortDir === "asc" ? "descendente" : "ascendente") : "descendente"}`}
                   className="flex items-center gap-1 text-text-secondary hover:text-text-primary"
                 >
-                  Data <ArrowUpDown className="w-3 h-3" />
+                  Data <ArrowUpDown className="w-3 h-3" aria-hidden="true" />
                 </button>
               </TableHead>
               <TableHead>Cartão</TableHead>
@@ -119,9 +124,7 @@ export function TransactionTable({ transactions, isLoading }: TransactionTablePr
                 className={`cursor-pointer hover:bg-surface ${
                   tx.status === "UNKNOWN" ? "bg-[#FFFBEB]" : ""
                 }`}
-                onClick={() => {
-                  window.location.href = `/dashboard/transactions/${tx.transaction_id}`;
-                }}
+                onClick={() => router.push(`/dashboard/transactions/${tx.transaction_id}`)}
               >
                 <TableCell>
                   <Tooltip>
