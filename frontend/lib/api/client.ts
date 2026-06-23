@@ -1,5 +1,3 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
-
 export function getApiKey(): string | null {
   if (typeof window === "undefined") return null;
   return sessionStorage.getItem("mony_api_key");
@@ -20,7 +18,8 @@ export async function apiFetch(
     headers["Authorization"] = `Bearer ${apiKey}`;
   }
 
-  const response = await fetch(`${BASE_URL}${path}`, {
+  // Use relative path so Next.js rewrite proxy forwards to the backend (avoids CORS)
+  const response = await fetch(path, {
     ...options,
     headers,
   });

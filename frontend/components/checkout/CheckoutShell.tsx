@@ -123,9 +123,21 @@ export function CheckoutShell({ amount, currency, cardTokenId, maskedCard }: Che
           setTransactionId(result.transaction_id);
           setPollStart(Date.now());
         }
-      } catch {
-        setErrorType("NETWORK");
-        setErrorMessage("Falha na conexão. Tente novamente.");
+      } catch (err: unknown) {
+        const isApiError = err !== null && typeof err === "object" && "status" in err;
+        if (isApiError) {
+          const status = (err as { status: number }).status;
+          if (status === 402 || status === 422) {
+            setErrorType("DECLINED");
+            setErrorMessage((err as { message?: string }).message);
+          } else {
+            setErrorType("FAILED");
+            setErrorMessage((err as { message?: string }).message);
+          }
+        } else {
+          setErrorType("NETWORK");
+          setErrorMessage("Falha na conexão com o servidor. Verifique se o backend está rodando.");
+        }
         setStep("ERROR");
       }
     },
