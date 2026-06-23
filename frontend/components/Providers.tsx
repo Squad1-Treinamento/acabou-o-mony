@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { CartProvider } from "@/context/CartContext";
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -23,7 +24,9 @@ export function Providers({ children }: ProvidersProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>{children}</TooltipProvider>
+      <CartProvider>
+        <TooltipProvider>{children}</TooltipProvider>
+      </CartProvider>
     </QueryClientProvider>
   );
 }
