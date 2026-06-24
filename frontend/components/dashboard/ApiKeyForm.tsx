@@ -20,21 +20,27 @@ export function ApiKeyForm() {
     setIsLoading(true);
     setError(null);
 
+    // Store key temporarily for the validation request; remove immediately on 401
     sessionStorage.setItem("mony_api_key", apiKey.trim());
 
     try {
       await getPayment("00000000-0000-0000-0000-000000000000");
+      // Key confirmed valid — keep it and proceed
       router.push("/dashboard");
     } catch (err: unknown) {
       const status = (err as { status?: number })?.status;
       if (status === 404) {
+        // 404 means the key was accepted (transaction just doesn't exist)
         router.push("/dashboard");
       } else if (status === 401) {
         sessionStorage.removeItem("mony_api_key");
         setError("Chave de API inválida");
         setIsLoading(false);
       } else {
-        router.push("/dashboard");
+        // Network/server error: remove key — do not silently admit an unvalidated key
+        sessionStorage.removeItem("mony_api_key");
+        setError("Não foi possível verificar a chave. Tente novamente.");
+        setIsLoading(false);
       }
     }
   }

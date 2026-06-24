@@ -1,9 +1,13 @@
 export function formatCurrency(amount: number, currency: string): string {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-  }).format(amount / 100);
+  try {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 2,
+    }).format(amount / 100);
+  } catch {
+    return `${(amount / 100).toFixed(2)} ${currency}`;
+  }
 }
 
 export function formatRelativeTime(isoString: string): string {

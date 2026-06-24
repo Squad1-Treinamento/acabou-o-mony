@@ -15,7 +15,7 @@ export function Providers({ children }: ProvidersProps) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            retry: 1,
+            retry: 0,
             staleTime: 0,
           },
         },

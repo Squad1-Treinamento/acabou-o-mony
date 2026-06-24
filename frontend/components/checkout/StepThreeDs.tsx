@@ -10,18 +10,29 @@ interface StepThreeDsProps {
 
 const REDIRECT_DELAY_MS = 500;
 
+function isSafeAcsUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export function StepThreeDs({ acsUrl }: StepThreeDsProps) {
+  const safeUrl = acsUrl && isSafeAcsUrl(acsUrl) ? acsUrl : null;
+
   useEffect(() => {
-    if (!acsUrl) return;
+    if (!safeUrl) return;
 
     const timer = setTimeout(() => {
-      window.location.href = acsUrl;
+      window.location.href = safeUrl;
     }, REDIRECT_DELAY_MS);
 
     return () => clearTimeout(timer);
-  }, [acsUrl]);
+  }, [safeUrl]);
 
-  if (!acsUrl) {
+  if (!safeUrl) {
     return (
       <ErrorState message="URL de autenticação não encontrada" />
     );
