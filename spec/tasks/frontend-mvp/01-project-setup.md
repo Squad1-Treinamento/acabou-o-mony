@@ -1,6 +1,6 @@
 # Task 01: Project Setup
 
-**Status**: Not Started  
+**Status**: ✅ Completed  
 **Estimated Time**: 2 hours
 
 ## Goal

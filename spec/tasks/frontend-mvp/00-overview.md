@@ -17,7 +17,7 @@ Build a **single-page application** with mock login and 5 functional screens (ta
 ## Task Breakdown
 
 ### Setup (2 hours)
-- [ ] `01-project-setup.md` - Vite + React + TypeScript + Tailwind
+- [x] `01-project-setup.md` - Vite + React + TypeScript + Tailwind
 
 ### Core Features (10-14 hours)
 - [ ] `02-auth-context.md` - Mock authentication context
