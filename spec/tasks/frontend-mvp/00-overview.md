@@ -20,7 +20,7 @@ Build a **single-page application** with mock login and 5 functional screens (ta
 - [x] `01-project-setup.md` - Vite + React + TypeScript + Tailwind
 
 ### Core Features (10-14 hours)
-- [ ] `02-auth-context.md` - Mock authentication context
+- [x] `02-auth-context.md` - Mock authentication context
 - [ ] `03-api-client.md` - Axios client with auth headers
 - [ ] `04-login-screen.md` - Mock login form
 - [ ] `05-payment-form.md` - Payment processing screen
