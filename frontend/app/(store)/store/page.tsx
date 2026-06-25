@@ -1,75 +1,124 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingBag, Search, User, Heart } from "lucide-react";
 import { ProductCard } from "@/components/store/ProductCard";
 import { useCart } from "@/context/CartContext";
 import { PRODUCTS } from "@/types/store";
 import { formatCurrency } from "@/lib/utils/formatters";
 
+const NAV_LINKS = ["Novidades", "Calçados", "Acessórios", "Eletrônicos", "Promoções"];
+
 export default function StorePage() {
   const { itemCount, total } = useCart();
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="bg-primary text-white">
-        <div className="px-6 h-14 flex items-center justify-between">
+    <div className="min-h-screen bg-[#F5F5F7] flex flex-col">
+
+      {/* Announcement bar */}
+      <div className="bg-slate-900 text-white text-xs text-center py-2 px-4 tracking-wide">
+        ✦ Pagamento 100% seguro · Devolução grátis em 30 dias ✦
+      </div>
+
+      {/* Header — Apple style */}
+      <header
+        className="sticky top-0 z-50"
+        style={{
+          background: "rgba(255,255,255,0.88)",
+          backdropFilter: "saturate(180%) blur(20px)",
+          WebkitBackdropFilter: "saturate(180%) blur(20px)",
+          borderBottom: "1px solid rgba(0,0,0,0.07)",
+        }}
+      >
+        {/* Main nav row */}
+        <div className="w-full px-8 h-14 flex items-center justify-between gap-6">
           <Link
             href="/"
-            className="font-semibold text-base tracking-tight hover:text-white/80 transition-colors"
+            className="font-bold text-base text-slate-900 hover:text-slate-600 transition-colors shrink-0"
           >
             Vibe Store
           </Link>
 
-          <Link
-            href="/store/cart"
-            className="relative flex items-center gap-2 text-white/80 hover:text-white transition-colors text-sm"
-          >
-            <span className="hidden sm:inline">Carrinho</span>
-            <div className="relative">
-              <ShoppingCart className="w-5 h-5" />
+          {/* Center nav links */}
+          <nav className="hidden md:flex items-center gap-6">
+            {NAV_LINKS.map((label) => (
+              <span
+                key={label}
+                className="text-sm text-slate-600 hover:text-slate-900 transition-colors cursor-pointer whitespace-nowrap"
+              >
+                {label}
+              </span>
+            ))}
+          </nav>
+
+          {/* Right icons */}
+          <div className="flex items-center gap-4 shrink-0">
+            <Search className="w-4 h-4 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer" />
+            <User className="w-4 h-4 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer" />
+            <Heart className="w-4 h-4 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer" />
+            <Link href="/store/cart" className="relative">
+              <ShoppingBag className="w-4 h-4 text-slate-500 hover:text-slate-900 transition-colors" />
               {itemCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-white text-primary text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                <span className="absolute -top-2 -right-2 bg-[#0066CC] text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
                   {itemCount}
                 </span>
               )}
-            </div>
-          </Link>
+            </Link>
+          </div>
         </div>
+
       </header>
 
-      <main className="flex-1 max-w-5xl mx-auto w-full px-6 py-10">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-text-primary tracking-tight">Loja</h1>
-          <p className="text-text-secondary text-sm mt-1">Adicione itens ao carrinho e finalize sua compra</p>
+      {/* Hero */}
+      <div className="px-8 pt-12 pb-8 max-w-6xl mx-auto w-full">
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-[11px] font-semibold text-white bg-[#0066CC] px-2.5 py-1 rounded-full">Nova coleção</span>
+          <span className="text-[11px] font-semibold text-white bg-rose-500 px-2.5 py-1 rounded-full">Sale</span>
         </div>
+        <h1 className="text-4xl font-bold text-slate-900 tracking-tight leading-tight">
+          Tudo que você precisa,<br className="hidden sm:block" /> num só lugar.
+        </h1>
+        <p className="text-slate-500 mt-3 text-sm">{PRODUCTS.length} produtos disponíveis</p>
+      </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Grid */}
+      <main className="flex-1 max-w-6xl mx-auto w-full px-8 pb-24">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {PRODUCTS.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
       </main>
 
+      {/* Sticky cart bar */}
       {itemCount > 0 && (
-        <div className="sticky bottom-0 bg-white border-t border-border px-6 py-4 shadow-lg">
-          <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
+        <div
+          className="sticky bottom-0 px-8 py-4"
+          style={{
+            background: "rgba(255,255,255,0.92)",
+            backdropFilter: "saturate(180%) blur(20px)",
+            WebkitBackdropFilter: "saturate(180%) blur(20px)",
+            borderTop: "1px solid rgba(0,0,0,0.06)",
+          }}
+        >
+          <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm text-text-secondary">
+              <p className="text-xs text-slate-500">
                 {itemCount} {itemCount === 1 ? "item" : "itens"} no carrinho
               </p>
-              <p className="font-bold text-text-primary">{formatCurrency(total, "BRL")}</p>
+              <p className="font-bold text-slate-900 text-sm">{formatCurrency(total, "BRL")}</p>
             </div>
             <Link
               href="/store/cart"
-              className="inline-flex items-center gap-2 h-11 px-6 rounded-btn bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors"
+              className="inline-flex items-center gap-2 h-10 px-6 rounded-full bg-[#0066CC] text-white text-xs font-semibold hover:bg-[#0055AA] transition-colors"
             >
-              <ShoppingCart className="w-4 h-4" />
+              <ShoppingBag className="w-4 h-4" />
               Ver carrinho
             </Link>
           </div>
         </div>
       )}
+
     </div>
   );
 }

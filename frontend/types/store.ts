@@ -5,6 +5,7 @@ export interface Product {
   price: number;
   emoji: string;
   category: string;
+  image?: string;
 }
 
 export interface CartItem {
@@ -20,6 +21,7 @@ export const PRODUCTS: Product[] = [
     price: 29990,
     emoji: "👟",
     category: "Calçados",
+    image: "/products/tenis.jpg",
   },
   {
     id: "2",
@@ -28,6 +30,7 @@ export const PRODUCTS: Product[] = [
     price: 18990,
     emoji: "🎒",
     category: "Acessórios",
+    image: "/products/mochila.jpg",
   },
   {
     id: "3",
@@ -36,6 +39,7 @@ export const PRODUCTS: Product[] = [
     price: 14990,
     emoji: "🕶️",
     category: "Acessórios",
+    image: "/products/oculos.jpg",
   },
   {
     id: "4",
@@ -44,6 +48,7 @@ export const PRODUCTS: Product[] = [
     price: 24990,
     emoji: "🎧",
     category: "Eletrônicos",
+    image: "/products/fone.jpg",
   },
   {
     id: "5",
@@ -52,5 +57,6 @@ export const PRODUCTS: Product[] = [
     price: 39990,
     emoji: "⌚",
     category: "Eletrônicos",
+    image: "/products/relogio.jpg",
   },
 ];

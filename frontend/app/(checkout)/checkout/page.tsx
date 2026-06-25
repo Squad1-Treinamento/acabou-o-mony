@@ -4,7 +4,7 @@ import { useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, ArrowLeft } from "lucide-react";
 import { CheckoutShell } from "@/components/checkout/CheckoutShell";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { useCart } from "@/context/CartContext";
@@ -50,6 +50,13 @@ export default function CheckoutPage() {
       <main className="flex-1 flex items-start justify-center px-4 py-10">
         <div className="w-full max-w-[480px]">
           <div className="mb-8">
+            <Link
+              href="/store/cart"
+              className="inline-flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary transition-colors mb-6"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Voltar ao carrinho
+            </Link>
             <h1 className="text-xl font-semibold text-text-primary tracking-tight">
               Finalizar pagamento
             </h1>
