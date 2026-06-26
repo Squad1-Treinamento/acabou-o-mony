@@ -1,23 +1,24 @@
-server.port=8081
+server.port=8080
 
 spring.application.name=3ds-engine
 
-spring.redis.host=localhost
-spring.redis.port=6379
-spring.redis.password=${SPRING_REDIS_PASSWORD:}
-spring.redis.timeout=2000ms
+spring.data.redis.host=${SPRING_DATA_REDIS_HOST:redis}
+spring.data.redis.port=${SPRING_DATA_REDIS_PORT:6379}
+spring.data.redis.password=${SPRING_DATA_REDIS_PASSWORD:}
+spring.data.redis.timeout=${SPRING_DATA_REDIS_TIMEOUT:5000}ms
+spring.data.redis.database=${SPRING_DATA_REDIS_DATABASE:0}
 
 management.endpoints.web.exposure.include=health
 
-jwt.secret=${JWT_SECRET:dev-secret-key-that-is-at-least-256-bits-long-for-hs256!!}
+jwt.secret=${JWT_SECRET:mony-3ds-jwt-secret-for-challenge-tokens-2024-production}
 jwt.expiration-seconds=600
 
-3ds.api-key=${3DS_API_KEY:dev-api-key-change-in-production}
+3ds.api-key=${THREEDS_ENGINE_API_KEY:mony-3ds-api-key-2024-secure}
 3ds.rate-limit-enabled=true
 3ds.session-ttl-seconds=600
 3ds.auth-result-ttl-seconds=86400
-3ds.redirect-base-url=${3DS_REDIRECT_BASE_URL:http://localhost:8081/challenge}
-3ds.callback-url=${3DS_CALLBACK_URL:http://localhost:8080/api/v1/payments/3ds-callback}
+3ds.redirect-base-url=${3DS_REDIRECT_BASE_URL:http://localhost:8080/challenge}
+3ds.callback-url=${CORE_SERVICE_CALLBACK_URL:http://core-payment:8080/api/v1/payments/3ds-callback}
 3ds.rate-limit-per-second=100
 
 risk.score-threshold=70
