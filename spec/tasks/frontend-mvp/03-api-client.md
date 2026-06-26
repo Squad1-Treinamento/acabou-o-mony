@@ -1,6 +1,6 @@
 # Task 03: API Client
 
-**Status**: Not Started  
+**Status**: ✅ Completed  
 **Estimated Time**: 1.5 hours
 
 ## Goal

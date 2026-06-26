@@ -21,7 +21,7 @@ Build a **single-page application** with mock login and 5 functional screens (ta
 
 ### Core Features (10-14 hours)
 - [x] `02-auth-context.md` - Mock authentication context
-- [ ] `03-api-client.md` - Axios client with auth headers
+- [x] `03-api-client.md` - Axios client with auth headers
 - [ ] `04-login-screen.md` - Mock login form
 - [ ] `05-payment-form.md` - Payment processing screen
 - [ ] `06-transaction-list.md` - Transaction list screen

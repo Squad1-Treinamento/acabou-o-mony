@@ -1,7 +1,29 @@
 import { useAuth } from './context/AuthContext.tsx';
+import { apiClient } from './services/api.ts';
+import { useEffect, useState } from 'react';
 
 function App() {
-  const { isAuthenticated, merchantId, login, logout } = useAuth();
+  const { isAuthenticated, merchantId, apiKey, login, logout } = useAuth();
+  const [testResult, setTestResult] = useState<string>('');
+
+  useEffect(() => {
+    if (apiKey) {
+      apiClient.setApiKey(apiKey);
+    } else {
+      apiClient.clearApiKey();
+    }
+  }, [apiKey]);
+
+  const testApiCall = async () => {
+    if (!merchantId) return;
+    
+    try {
+      const transactions = await apiClient.getTransactions(merchantId);
+      setTestResult(`Success! Found ${transactions.length} transactions`);
+    } catch (error: any) {
+      setTestResult(`Error: ${error.message} (status: ${error.status})`);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -22,12 +44,24 @@ function App() {
               Test Login
             </button>
           ) : (
-            <button
-              onClick={logout}
-              className="mt-2 px-4 py-2 bg-red-600 text-white rounded"
-            >
-              Logout
-            </button>
+            <>
+              <button
+                onClick={logout}
+                className="mt-2 px-4 py-2 bg-red-600 text-white rounded mr-2"
+              >
+                Logout
+              </button>
+              <button
+                onClick={testApiCall}
+                className="mt-2 px-4 py-2 bg-green-600 text-white rounded"
+              >
+                Test API Call
+              </button>
+            </>
+          )}
+          
+          {testResult && (
+            <p className="mt-4 text-sm text-gray-700">{testResult}</p>
           )}
         </div>
       </div>
