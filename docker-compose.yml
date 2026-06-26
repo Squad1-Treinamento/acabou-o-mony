@@ -115,6 +115,7 @@ services:
       3ds-engine:
         condition: service_healthy
     environment:
+      - SPRING_PROFILES_ACTIVE=3ds,audit-logging,risk-evaluation,webhook,mock-acquirer
       - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL:-jdbc:postgresql://database-payment:5432/payment-service}
       - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME:-postgres}
       - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD:-root123}
