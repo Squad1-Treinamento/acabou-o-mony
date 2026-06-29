@@ -237,6 +237,148 @@ The dashboard provides a **Transaction ID lookup** input in addition to the tabl
 
 ---
 
+## Extended Features (Phase 2)
+
+### Dashboard Navigation
+
+A persistent left sidebar replaces the top `AppHeader` on desktop (≥ 768px). On mobile, a compact top bar shows logo and key links.
+
+**Sidebar nav items (in order):**
+| Icon | Label | Route | Active rule |
+|---|---|---|---|
+| LayoutDashboard | Transações | `/dashboard` | exact match |
+| TrendingUp | Analytics | `/dashboard/analytics` | prefix |
+| RefreshCw | Reconciliação | `/dashboard/reconciliation` | prefix |
+| Webhook | Webhooks | `/dashboard/webhooks` | prefix |
+| Settings | Configurações | `/dashboard/settings` | prefix |
+
+Active item: `bg-[#0D2B1E]/[0.07]` background, `text-[#0D2B1E]` font, medium weight.
+Inactive item: `text-slate-500` hover → `text-slate-800 bg-slate-50`.
+
+Sidebar footer: masked API key display (`••••••••`) + Logout button.
+Auth check moved to shared `dashboard/layout.tsx` — each page no longer needs its own `useEffect` guard.
+
+### Analytics Page (`/dashboard/analytics`)
+
+Purpose: give the merchant a read-only revenue and volume intelligence view derived entirely from the existing `GET /api/v1/payments` list endpoint (client-side aggregation — no dedicated analytics API).
+
+**KPI cards (row of 4):**
+| Metric | Computation |
+|---|---|
+| Receita total | sum of `amount` where `status === "COMPLETED"` |
+| Transações | count of all transactions |
+| Ticket médio | revenue total / completed count (or `—`) |
+| Taxa de aprovação | completed / total × 100% (or `—`) |
+
+**Revenue by day (bar chart):**
+- X-axis: last 14 calendar days (ISO `YYYY-MM-DD`)
+- Y-axis: sum of `amount` for `COMPLETED` transactions on that day
+- Bar height proportional to max value in the window
+- Tooltip on hover: formatted date + formatted amount
+- Built with CSS flexbox (no external chart library)
+
+**Status distribution (horizontal bar chart):**
+- One row per status group: Concluídas, Em andamento, Recusadas/Falhas, Reconciliação
+- Width proportional to percentage of total; color matches KPI bar colors
+- Count + percentage shown right-aligned
+
+**Top transactions table:**
+- 5 highest-value `COMPLETED` transactions
+- Columns: ID (truncated), Valor, Data
+- Each row links to `/dashboard/transactions/{id}`
+
+**Acceptance criteria:**
+- All data derived from `useTransactionList()` — no additional API calls
+- Empty state if no transactions loaded yet
+- Handles 0 completed transactions gracefully (shows `—` where division would occur)
+
+### Reconciliation Page (`/dashboard/reconciliation`)
+
+Purpose: surface all `UNKNOWN` transactions and explain the automatic reconciliation process.
+
+**Info banner (always visible):**
+"A reconciliação automática consulta o adquirente a cada 5 minutos e resolve o status para COMPLETED ou DECLINED. Nenhuma ação manual é necessária."
+
+**Stats row:**
+- Total em reconciliação: count of `UNKNOWN` transactions
+- Mais antigo: relative time of the oldest `UNKNOWN` created_at
+- Valor total exposto: sum of `amount` for all `UNKNOWN` transactions
+
+**Table of UNKNOWN transactions:**
+- Columns: ID (truncated + link), Valor, Tempo no status, Ações (link to detail)
+- "Tempo no status" = `Date.now() - new Date(created_at)` formatted as "Xh Ymin" or "Ymin"
+- Sorted by `created_at` ascending (oldest first = highest risk)
+- Auto-refreshes every 30 seconds (uses `useTransactionList`)
+
+**Empty state:**
+- Icon: CheckCircle (emerald)
+- "Nenhuma transação em reconciliação"
+- Sub-text: "Todas as transações têm status determinado."
+
+**Acceptance criteria:**
+- Shows only `status === "UNKNOWN"` rows
+- Age computed client-side; refreshes with each re-render cycle
+- Empty state shown when filter returns zero results
+
+### Webhooks Page (`/dashboard/webhooks`)
+
+Purpose: show a simulated webhook event log derived from terminal transactions. Since the backend outbox is not directly exposed via a public API, events are synthesized client-side from `PaymentResponse` data.
+
+**Event derivation rules:**
+| Transaction status | Event type | Event payload timestamp |
+|---|---|---|
+| `COMPLETED` | `payment.completed` | `updated_at` |
+| `DECLINED` | `payment.declined` | `updated_at` |
+| `FAILED` | `payment.failed` | `updated_at` |
+
+Non-terminal transactions do not generate webhook events.
+
+**Event list columns:**
+- Event type (colored chip: green for completed, red for declined/failed)
+- Transaction ID (truncated, links to detail)
+- Valor
+- Data do evento (relative)
+- Delivery status (always "Entregue" with green dot — simulated)
+
+**Filter chips above list:**
+- `payment.completed` / `payment.declined` / `payment.failed` (toggle, multi-select)
+
+**Empty state:** "Nenhum evento de webhook encontrado" when no terminal transactions or all filtered out.
+
+**Acceptance criteria:**
+- Events derived only from terminal transactions (COMPLETED, DECLINED, FAILED)
+- Sorted by `updated_at` descending (most recent first)
+- Filter chips update list reactively without API calls
+
+### Settings Page (`/dashboard/settings`)
+
+Purpose: let the merchant manage their API key, configure a webhook endpoint URL, and set notification preferences — all stored client-side with no additional API.
+
+**Section 1 — Autenticação:**
+- Displays current API key from `sessionStorage`, masked by default
+- Eye/EyeOff toggle to reveal
+- Copy-to-clipboard button
+- "Rotacionar chave" button: disabled with tooltip "Em breve" (not implemented in backend MVP)
+
+**Section 2 — Integração (webhook endpoint):**
+- Text input for webhook URL (validated: must start with `https://` or `http://localhost`)
+- Persisted to `localStorage` under `mony_webhook_url`
+- "Salvar" button; success toast shown for 2 seconds on save
+
+**Section 3 — Notificações:**
+- Toggle: "Receber alerta ao email quando uma transação for recusada" (`mony_notify_declined`)
+- Toggle: "Receber alerta ao email quando houver falha técnica" (`mony_notify_failed`)
+- Both persisted to `localStorage`
+- Note below toggles: "Configurações de notificação são salvas localmente neste dispositivo."
+
+**Acceptance criteria:**
+- API key is read from `sessionStorage` on mount; shown masked by default
+- `localStorage` values are read on mount and applied to form state
+- Saving webhook URL: validation shows inline error if URL is invalid
+- All toggles update `localStorage` immediately on change (no save button for toggles)
+
+---
+
 ## Tech Stack and Constraints
 
 - **Framework:** Next.js 14 (App Router), TypeScript strict mode

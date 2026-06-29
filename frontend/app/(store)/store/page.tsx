@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { ShoppingBag, Search, User, Heart } from "lucide-react";
 import { ProductCard } from "@/components/store/ProductCard";
 import { useCart } from "@/context/CartContext";
@@ -31,12 +32,16 @@ export default function StorePage() {
         }}
       >
         {/* Main nav row */}
-        <div className="w-full px-8 h-14 flex items-center justify-between gap-6">
-          <Link
-            href="/"
-            className="font-bold text-base text-slate-900 hover:text-slate-600 transition-colors shrink-0"
-          >
-            Vibe Store
+        <div className="w-full px-8 h-20 flex items-center justify-between gap-6">
+          <Link href="/" className="hover:opacity-75 transition-opacity shrink-0">
+            <Image
+              src="/vibe-store.png"
+              alt="Vibe Store"
+              width={400}
+              height={533}
+              className="h-16 w-auto"
+              unoptimized
+            />
           </Link>
 
           {/* Center nav links */}

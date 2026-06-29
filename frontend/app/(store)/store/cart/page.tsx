@@ -45,12 +45,16 @@ function StoreHeader({ itemCount }: { itemCount: number }) {
           borderBottom: "1px solid rgba(0,0,0,0.07)",
         }}
       >
-        <div className="w-full px-8 h-14 flex items-center justify-between gap-6">
-          <Link
-            href="/"
-            className="font-bold text-base text-slate-900 hover:text-slate-600 transition-colors shrink-0"
-          >
-            Vibe Store
+        <div className="w-full px-8 h-20 flex items-center justify-between gap-6">
+          <Link href="/" className="hover:opacity-75 transition-opacity shrink-0">
+            <Image
+              src="/vibe-store.png"
+              alt="Vibe Store"
+              width={400}
+              height={533}
+              className="h-16 w-auto"
+              unoptimized
+            />
           </Link>
           <nav className="hidden md:flex items-center gap-6">
             {NAV_LINKS.map((label) => (

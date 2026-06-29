@@ -6,6 +6,15 @@ import { TERMINAL_STATUSES } from "@/types/payment";
 import type { PaymentResponse, PaymentStatus } from "@/types/payment";
 
 const DASHBOARD_POLL_INTERVAL_MS = 30_000;
+const UNKNOWN_STALE_MS = 5 * 60 * 1000;
+
+export function resolveDisplayStatus(tx: PaymentResponse): PaymentStatus {
+  if (tx.status === "UNKNOWN") {
+    const ageMs = Date.now() - new Date(tx.created_at).getTime();
+    if (ageMs >= UNKNOWN_STALE_MS) return "DECLINED";
+  }
+  return tx.status;
+}
 
 export interface TransactionFilters {
   statuses?: PaymentStatus[];
@@ -27,7 +36,7 @@ export function filterTransactions(
   filters: TransactionFilters
 ): PaymentResponse[] {
   return results.filter((tx) => {
-    if (filters.statuses?.length && !filters.statuses.includes(tx.status)) {
+    if (filters.statuses?.length && !filters.statuses.includes(resolveDisplayStatus(tx))) {
       return false;
     }
     if (filters.dateFrom && tx.created_at < filters.dateFrom) return false;

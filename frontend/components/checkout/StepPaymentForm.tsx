@@ -1,13 +1,12 @@
 "use client";
 
 import { useForm, Controller } from "react-hook-form";
-import { CreditCard, Lock } from "lucide-react";
+import { Lock, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { SecurityBadge } from "@/components/shared/SecurityBadge";
 import { formatCurrency } from "@/lib/utils/formatters";
-import { useCart } from "@/context/CartContext";
+import { AcceptedBrands } from "./CardBrandIcons";
+import type { CardBrandKey } from "./CardBrandIcons";
 
 interface CardFormValues {
   card_number: string;
@@ -24,19 +23,19 @@ interface StepPaymentFormProps {
   onSubmit: (data: { card_token_id: string; customer_email?: string }) => void;
 }
 
-function detectBrand(number: string): string {
+function detectBrand(number: string): CardBrandKey | "" {
   const n = number.replace(/\D/g, "");
   if (n.startsWith("4")) return "visa";
-  if (/^5[1-5]/.test(n)) return "mc";
+  if (/^5[1-5]/.test(n)) return "mastercard";
   if (n.startsWith("3")) return "amex";
   if (/^6/.test(n)) return "elo";
-  return "card";
+  return "";
 }
 
 function generateToken(cardNumber: string): string {
   const cleaned = cardNumber.replace(/\D/g, "");
   const last4 = cleaned.slice(-4);
-  const brand = detectBrand(cleaned);
+  const brand = detectBrand(cleaned) || "card";
   return `tok-${brand}-${last4}`;
 }
 
@@ -54,13 +53,12 @@ function formatExpiry(value: string): string {
   return cleaned;
 }
 
-const BRAND_LABEL: Record<string, string> = {
-  visa: "Visa",
-  mc: "Mastercard",
-  amex: "Amex",
-  elo: "Elo",
-  card: "Cartão",
-};
+const inputCls =
+  "h-11 rounded-xl border-slate-200 bg-[#F5F5F7] px-3.5 text-sm text-slate-900 " +
+  "placeholder:text-slate-300 focus-visible:border-[#0D2B1E] focus-visible:bg-white " +
+  "focus-visible:ring-2 focus-visible:ring-[#0D2B1E]/10 transition-all";
+
+const labelCls = "text-xs font-medium text-slate-500 mb-1.5 block";
 
 export function StepPaymentForm({
   amount,
@@ -68,8 +66,6 @@ export function StepPaymentForm({
   isSubmitting,
   onSubmit,
 }: StepPaymentFormProps) {
-  const { items } = useCart();
-
   const {
     register,
     control,
@@ -108,90 +104,51 @@ export function StepPaymentForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} noValidate className="space-y-5">
-      {/* Cart summary */}
-      <div className="bg-white rounded-card border border-border p-5 space-y-2.5">
-        {items.map(({ product, quantity }) => (
-          <div key={product.id} className="flex items-center justify-between text-sm">
-            <span className="text-text-secondary">
-              {product.emoji} {product.name}
-              {quantity > 1 && (
-                <span className="ml-1 text-text-secondary/70">× {quantity}</span>
-              )}
-            </span>
-            <span className="font-medium text-text-primary tabular-nums">
-              {formatCurrency(product.price * quantity, currency)}
-            </span>
+    <form onSubmit={handleSubmit(handleFormSubmit)} noValidate className="space-y-0">
+
+      {/* Heading + accepted brands */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(13,43,30,0.08)" }}>
+            <Lock className="w-3.5 h-3.5" style={{ color: "#0D2B1E" }} />
           </div>
-        ))}
-        <div className="border-t border-border pt-2.5 flex justify-between items-baseline">
-          <span className="font-semibold text-text-primary text-sm">Total</span>
-          <span className="text-xl font-bold text-text-primary tabular-nums">
-            {formatCurrency(amount, currency)}
-          </span>
+          <h2 className="text-sm font-semibold text-slate-900">Informações de pagamento</h2>
         </div>
+        <AcceptedBrands activeBrand={brand} />
       </div>
 
-      {/* Card form */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2 text-sm font-medium text-text-primary">
-          <CreditCard className="w-4 h-4 text-primary" />
-          Dados do cartão
-        </div>
 
         {/* Card number */}
-        <div className="space-y-1.5">
-          <Label htmlFor="card_number" className="text-xs font-medium text-text-secondary">
+        <div>
+          <label htmlFor="card_number" className={labelCls}>
             Número do cartão
-          </Label>
-          <div className="relative">
-            <Controller
-              name="card_number"
-              control={control}
-              rules={{
-                required: true,
-                validate: (v) => v.replace(/\D/g, "").length === 16,
-              }}
-              render={({ field }) => (
-                <Input
-                  {...field}
-                  id="card_number"
-                  inputMode="numeric"
-                  placeholder="1234 5678 9012 3456"
-                  maxLength={19}
-                  onChange={(e) => field.onChange(formatCardNumber(e.target.value))}
-                  className="h-[var(--height-input)] rounded-input border-input-border px-4 pr-16 text-base font-mono tracking-wider"
-                />
-              )}
-            />
-            {brand !== "card" && cardNumber.length > 0 && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-text-secondary">
-                {BRAND_LABEL[brand]}
-              </span>
+          </label>
+          <Controller
+            name="card_number"
+            control={control}
+            rules={{ required: true, validate: (v) => v.replace(/\D/g, "").length === 16 }}
+            render={({ field }) => (
+              <Input
+                {...field}
+                id="card_number"
+                inputMode="numeric"
+                placeholder="1234 5678 9012 3456"
+                maxLength={19}
+                autoComplete="cc-number"
+                onChange={(e) => field.onChange(formatCardNumber(e.target.value))}
+                className={`${inputCls} font-mono tracking-wider`}
+              />
             )}
-          </div>
-        </div>
-
-        {/* Cardholder name */}
-        <div className="space-y-1.5">
-          <Label htmlFor="cardholder_name" className="text-xs font-medium text-text-secondary">
-            Nome no cartão
-          </Label>
-          <Input
-            id="cardholder_name"
-            placeholder="NOME SOBRENOME"
-            autoComplete="cc-name"
-            className="h-[var(--height-input)] rounded-input border-input-border px-4 text-base uppercase placeholder:normal-case"
-            {...register("cardholder_name", { required: true, minLength: 2 })}
           />
         </div>
 
         {/* Expiry + CVV */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="expiry" className="text-xs font-medium text-text-secondary">
+          <div>
+            <label htmlFor="expiry" className={labelCls}>
               Validade
-            </Label>
+            </label>
             <Controller
               name="expiry"
               control={control}
@@ -203,41 +160,58 @@ export function StepPaymentForm({
                   inputMode="numeric"
                   placeholder="MM/AA"
                   maxLength={5}
+                  autoComplete="cc-exp"
                   onChange={(e) => field.onChange(formatExpiry(e.target.value))}
-                  className="h-[var(--height-input)] rounded-input border-input-border px-4 text-base font-mono"
+                  className={`${inputCls} font-mono`}
                 />
               )}
             />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="cvv" className="text-xs font-medium text-text-secondary">
+          <div>
+            <label htmlFor="cvv" className={labelCls}>
               CVV
-            </Label>
+            </label>
             <div className="relative">
               <Input
                 id="cvv"
                 inputMode="numeric"
-                placeholder="123"
+                placeholder="•••"
                 maxLength={4}
-                className="h-[var(--height-input)] rounded-input border-input-border px-4 text-base font-mono"
+                autoComplete="cc-csc"
+                className={`${inputCls} font-mono pr-10`}
                 {...register("cvv", { required: true, minLength: 3 })}
               />
-              <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-secondary/40" />
+              <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300" />
             </div>
           </div>
         </div>
 
-        {/* Email (optional) */}
-        <div className="space-y-1.5">
-          <Label htmlFor="customer_email" className="text-xs font-medium text-text-secondary">
+        {/* Cardholder name */}
+        <div>
+          <label htmlFor="cardholder_name" className={labelCls}>
+            Nome no cartão
+          </label>
+          <Input
+            id="cardholder_name"
+            placeholder="NOME SOBRENOME"
+            autoComplete="cc-name"
+            className={`${inputCls} uppercase placeholder:normal-case`}
+            {...register("cardholder_name", { required: true, minLength: 2 })}
+          />
+        </div>
+
+        {/* Email */}
+        <div>
+          <label htmlFor="customer_email" className={labelCls}>
             E-mail{" "}
-            <span className="font-normal text-text-secondary/70">(opcional)</span>
-          </Label>
+            <span className="font-normal text-slate-400">(opcional)</span>
+          </label>
           <Input
             id="customer_email"
             type="email"
-            placeholder="cliente@exemplo.com"
-            className="h-[var(--height-input)] rounded-input border-input-border px-4 text-base"
+            placeholder="seu@email.com"
+            autoComplete="email"
+            className={inputCls}
             {...register("customer_email", {
               pattern: {
                 value: /^$|^[^\s@]+@[^\s@]+\.[^\s@]+$/,
@@ -246,23 +220,31 @@ export function StepPaymentForm({
             })}
           />
           {errors.customer_email && (
-            <p className="text-xs text-error">{errors.customer_email.message}</p>
+            <p className="text-xs text-red-500 mt-1">{errors.customer_email.message}</p>
           )}
         </div>
+
       </div>
 
+      {/* CTA */}
       <Button
         type="submit"
-        className="w-full bg-primary hover:bg-primary/90 text-white font-semibold rounded-btn"
-        style={{ height: "var(--height-btn)" }}
+        className="w-full h-12 rounded-xl mt-6 font-semibold text-sm tracking-tight gap-2"
+        style={{ background: "linear-gradient(135deg, #0D2B1E 0%, #1a4532 100%)" }}
         disabled={!isCardComplete || isSubmitting}
       >
-        {isSubmitting ? "Processando..." : `Pagar ${formatCurrency(amount, currency)}`}
+        <Lock className="w-3.5 h-3.5 opacity-70" />
+        {isSubmitting
+          ? "Processando..."
+          : `Pagar ${formatCurrency(amount, currency)}`}
       </Button>
 
-      <div className="flex justify-center">
-        <SecurityBadge />
+      {/* Trust line */}
+      <div className="mt-4 flex items-center justify-center gap-1.5 text-slate-400">
+        <ShieldCheck className="w-3 h-3" />
+        <span className="text-[11px]">Seus dados estão protegidos com criptografia de 256 bits</span>
       </div>
+
     </form>
   );
 }

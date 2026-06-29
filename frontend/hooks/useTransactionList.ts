@@ -9,6 +9,10 @@ export function useTransactionList() {
     queryKey: ["transactions"],
     queryFn: listPayments,
     staleTime: 30_000,
-    refetchInterval: 30_000,
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      if (data?.some((tx) => tx.status === "UNKNOWN")) return 10_000;
+      return 30_000;
+    },
   });
 }

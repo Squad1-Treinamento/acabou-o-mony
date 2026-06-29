@@ -1,8 +1,5 @@
 "use client";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "./StatusBadge";
 import { CopyButton } from "@/components/shared/CopyButton";
@@ -14,14 +11,27 @@ interface TransactionDetailProps {
   transactionId: string;
 }
 
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between py-3.5 border-b border-slate-100 last:border-0">
+      <span className="text-xs font-medium text-slate-400 uppercase tracking-wider w-44 shrink-0">
+        {label}
+      </span>
+      <div className="text-sm text-slate-800 text-right flex items-center gap-1">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export function TransactionDetail({ transactionId }: TransactionDetailProps) {
   const { data, isLoading, error, refetch } = useGetPayment(transactionId, true, 10_000);
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-64 w-full rounded-card" />
+      <div className="space-y-3">
+        <Skeleton className="h-7 w-36 rounded-lg" />
+        <Skeleton className="h-72 w-full rounded-xl" />
       </div>
     );
   }
@@ -38,104 +48,81 @@ export function TransactionDetail({ transactionId }: TransactionDetailProps) {
   const tx = data;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {/* Status banner for UNKNOWN */}
       {tx.status === "UNKNOWN" && (
-        <Alert className="border-[#D97706]/30 bg-[#FFFBEB]">
-          <AlertDescription className="text-[#D97706] text-sm">
+        <div className="flex items-start gap-3 rounded-xl bg-amber-50 border border-amber-200/60 px-4 py-3">
+          <div className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0" />
+          <p className="text-sm text-amber-700">
             Esta transação está em reconciliação. O status será atualizado automaticamente.
-          </AlertDescription>
-        </Alert>
+          </p>
+        </div>
       )}
 
-      <Card className="rounded-card border-border shadow-sm">
-        <CardContent className="p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-text-primary">Detalhes da transação</h2>
-            <StatusBadge status={tx.status} />
-          </div>
+      {/* Status banner for stuck VALIDATED */}
+      {tx.status === "VALIDATED" && (
+        <div className="flex items-start gap-3 rounded-xl bg-red-50 border border-red-200/60 px-4 py-3">
+          <div className="w-1.5 h-1.5 rounded-full bg-red-400 mt-1.5 shrink-0" />
+          <p className="text-sm text-red-700">
+            Esta transação ficou presa na validação devido a um erro interno. Não foi cobrada e não requer ação do portador.
+          </p>
+        </div>
+      )}
 
-          <Separator />
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="font-mono text-xs text-slate-400 mb-1">{truncateUUID(tx.transaction_id)}</p>
+          <p className="text-2xl font-bold text-slate-900 tabular-nums">
+            {formatCurrency(tx.amount, tx.currency)}
+          </p>
+        </div>
+        <StatusBadge status={tx.status} />
+      </div>
 
-          <div className="grid gap-3">
-            <DetailRow label="ID da transação">
-              <div className="flex items-center gap-1">
-                <span className="font-mono text-sm">{truncateUUID(tx.transaction_id)}</span>
-                <CopyButton value={tx.transaction_id} label="Copiar ID" />
-              </div>
-            </DetailRow>
+      {/* Detail rows */}
+      <div className="bg-white rounded-xl border border-slate-200 px-5">
+        <Row label="ID da transação">
+          <span className="font-mono text-xs text-slate-600">{truncateUUID(tx.transaction_id)}</span>
+          <CopyButton value={tx.transaction_id} label="Copiar ID" />
+        </Row>
 
-            <Separator />
+        <Row label="Valor">
+          <span className="font-semibold">{formatCurrency(tx.amount, tx.currency)}</span>
+        </Row>
 
-            <DetailRow label="Valor">
-              <span className="font-semibold">{formatCurrency(tx.amount, tx.currency)}</span>
-            </DetailRow>
+        <Row label="Moeda">
+          <span className="font-mono text-xs">{tx.currency}</span>
+        </Row>
 
-            <Separator />
+        {tx.idempotency_key && (
+          <Row label="Idempotência">
+            <span className="font-mono text-xs text-slate-500 truncate max-w-[200px]">
+              {tx.idempotency_key}
+            </span>
+            <CopyButton value={tx.idempotency_key} label="Copiar chave" />
+          </Row>
+        )}
 
-            <DetailRow label="Moeda">
-              <span>{tx.currency}</span>
-            </DetailRow>
+        {tx.challenge_id && (
+          <Row label="Challenge ID">
+            <span className="font-mono text-xs text-slate-500">{tx.challenge_id}</span>
+          </Row>
+        )}
 
-            {tx.masked_card && (
-              <>
-                <Separator />
-                <DetailRow label="Cartão">{tx.masked_card}</DetailRow>
-              </>
-            )}
+        <Row label="Criado em">
+          <span>
+            {formatRelativeTime(tx.created_at)}{" "}
+            <span className="text-xs text-slate-400">
+              · {new Date(tx.created_at).toLocaleString("pt-BR")}
+            </span>
+          </span>
+        </Row>
 
-            {tx.idempotency_key && (
-              <>
-                <Separator />
-                <DetailRow label="Chave de idempotência">
-                  <div className="flex items-center gap-1">
-                    <span className="font-mono text-xs text-text-secondary truncate max-w-[200px]">
-                      {tx.idempotency_key}
-                    </span>
-                    <CopyButton value={tx.idempotency_key} label="Copiar chave" />
-                  </div>
-                </DetailRow>
-              </>
-            )}
-
-            {tx.challenge_id && (
-              <>
-                <Separator />
-                <DetailRow label="Challenge ID">
-                  <span className="font-mono text-xs text-text-secondary">{tx.challenge_id}</span>
-                </DetailRow>
-              </>
-            )}
-
-            <Separator />
-
-            <DetailRow label="Criado em">
-              <span className="text-text-secondary text-sm">
-                {formatRelativeTime(tx.created_at)}
-                <span className="ml-2 text-xs opacity-60">
-                  ({new Date(tx.created_at).toLocaleString("pt-BR")})
-                </span>
-              </span>
-            </DetailRow>
-
-            <Separator />
-
-            <DetailRow label="Atualizado em">
-              <span className="text-text-secondary text-sm">
-                {formatRelativeTime(tx.updated_at)}
-              </span>
-            </DetailRow>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-start justify-between gap-4">
-      <span className="text-sm text-text-secondary whitespace-nowrap">{label}</span>
-      <div className="text-sm text-text-primary text-right">{children}</div>
+        <Row label="Atualizado em">
+          {formatRelativeTime(tx.updated_at)}
+        </Row>
+      </div>
     </div>
   );
 }

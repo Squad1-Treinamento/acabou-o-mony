@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { StepIndicator } from "@/components/shared/StepIndicator";
 import { StepPaymentForm } from "./StepPaymentForm";
 import { StepProcessing } from "./StepProcessing";
 import { StepSuccess } from "./StepSuccess";
@@ -14,21 +13,17 @@ import type { PaymentResponse } from "@/types/payment";
 type CheckoutStep = "FORM" | "PROCESSING" | "SUCCESS" | "ERROR";
 type ErrorType = "DECLINED" | "FAILED" | "NETWORK" | "UNKNOWN_TIMEOUT";
 
-const STEP_LABELS = ["Dados", "Processando", "Confirmação"];
-const STEP_INDEX: Record<CheckoutStep, number> = {
-  FORM: 0,
-  PROCESSING: 1,
-  SUCCESS: 2,
-  ERROR: 2,
-};
 
 interface CheckoutShellProps {
   amount: number;
   currency: string;
   onComplete?: () => void;
+  onPaymentStarted?: () => void;
+  onPaymentFailed?: () => void;
+  onRetry?: () => void;
 }
 
-export function CheckoutShell({ amount, currency, onComplete }: CheckoutShellProps) {
+export function CheckoutShell({ amount, currency, onComplete, onPaymentStarted, onPaymentFailed, onRetry }: CheckoutShellProps) {
   const [step, setStep] = useState<CheckoutStep>("FORM");
   const [transactionId, setTransactionId] = useState<string | null>(null);
   const [awaitingAuth, setAwaitingAuth] = useState(false);
@@ -64,6 +59,7 @@ export function CheckoutShell({ amount, currency, onComplete }: CheckoutShellPro
 
     if (timedOut) {
       setErrorType("UNKNOWN_TIMEOUT");
+      onPaymentFailed?.();
       setStep("ERROR");
       return;
     }
@@ -78,6 +74,7 @@ export function CheckoutShell({ amount, currency, onComplete }: CheckoutShellPro
         clearCheckoutSession();
         setErrorType(data.status === "DECLINED" ? "DECLINED" : "FAILED");
         setErrorMessage(data.message);
+        onPaymentFailed?.();
         setStep("ERROR");
       }
     }
@@ -87,6 +84,7 @@ export function CheckoutShell({ amount, currency, onComplete }: CheckoutShellPro
     async (formData: { card_token_id: string; customer_email?: string }) => {
       const idempotencyKey = getOrCreateCheckoutKey();
       setStep("PROCESSING");
+      onPaymentStarted?.();
 
       try {
         const result = await createMutation.mutateAsync({
@@ -118,6 +116,7 @@ export function CheckoutShell({ amount, currency, onComplete }: CheckoutShellPro
             clearCheckoutSession();
             setErrorType(result.status === "DECLINED" ? "DECLINED" : "FAILED");
             setErrorMessage(result.message);
+            onPaymentFailed?.();
             setStep("ERROR");
           }
         } else {
@@ -140,6 +139,7 @@ export function CheckoutShell({ amount, currency, onComplete }: CheckoutShellPro
           setErrorType("NETWORK");
           setErrorMessage("Falha na conexão com o servidor. Verifique se o backend está rodando.");
         }
+        onPaymentFailed?.();
         setStep("ERROR");
       }
     },
@@ -149,11 +149,11 @@ export function CheckoutShell({ amount, currency, onComplete }: CheckoutShellPro
   const handleRetry = useCallback(() => {
     setStep("FORM");
     setErrorMessage(undefined);
-  }, []);
+    onRetry?.();
+  }, [onRetry]);
 
   return (
-    <div className="w-full max-w-[480px] mx-auto">
-      <StepIndicator steps={STEP_LABELS} currentStep={STEP_INDEX[step]} />
+    <div className="w-full">
 
       {step === "FORM" && (
         <StepPaymentForm
@@ -178,7 +178,7 @@ export function CheckoutShell({ amount, currency, onComplete }: CheckoutShellPro
         <StepError
           errorType={errorType}
           message={errorMessage}
-          onRetry={errorType !== "DECLINED" ? handleRetry : undefined}
+          onRetry={handleRetry}
         />
       )}
     </div>

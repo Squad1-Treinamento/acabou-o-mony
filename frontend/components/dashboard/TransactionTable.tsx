@@ -3,26 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowUpDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatusBadge } from "./StatusBadge";
 import { TransactionCard } from "./TransactionCard";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { formatCurrency, formatRelativeTime } from "@/lib/utils/formatters";
-import {
-  sortTransactions,
-  paginateTransactions,
-} from "@/hooks/useTransactions";
+import { sortTransactions, paginateTransactions, resolveDisplayStatus } from "@/hooks/useTransactions";
 import type { PaymentResponse } from "@/types/payment";
 import type { SortField, SortDirection } from "@/hooks/useTransactions";
 
@@ -31,6 +19,17 @@ const PAGE_SIZE = 20;
 interface TransactionTableProps {
   transactions: PaymentResponse[];
   isLoading: boolean;
+}
+
+function SortIcon({ field, sortField, sortDir }: {
+  field: SortField;
+  sortField: SortField;
+  sortDir: SortDirection;
+}) {
+  if (field !== sortField) return <ChevronsUpDown className="w-3 h-3 text-slate-300" />;
+  return sortDir === "asc"
+    ? <ChevronUp className="w-3 h-3 text-[#0D2B1E]" />
+    : <ChevronDown className="w-3 h-3 text-[#0D2B1E]" />;
 }
 
 export function TransactionTable({ transactions, isLoading }: TransactionTableProps) {
@@ -54,9 +53,9 @@ export function TransactionTable({ transactions, isLoading }: TransactionTablePr
 
   if (isLoading) {
     return (
-      <div className="space-y-3">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-12 w-full rounded-card" />
+      <div className="space-y-2">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="h-11 w-full rounded-lg" />
         ))}
       </div>
     );
@@ -66,133 +65,132 @@ export function TransactionTable({ transactions, isLoading }: TransactionTablePr
     return (
       <EmptyState
         title="Nenhuma transação encontrada"
-        subtitle="Ajuste os filtros ou insira IDs de transação acima."
+        subtitle="Ajuste os filtros para ver outros resultados."
       />
     );
   }
 
+  const thCls = "px-4 py-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider";
+  const tdCls = "px-4 py-3 text-sm text-slate-600";
+
   return (
-    <div className="space-y-4">
-      {/* Mobile: card list */}
-      <div className="flex flex-col gap-3 md:hidden">
+    <div className="space-y-3">
+      {/* Mobile */}
+      <div className="flex flex-col gap-2 md:hidden">
         {items.map((tx) => (
           <TransactionCard key={tx.transaction_id} transaction={tx} />
         ))}
       </div>
 
-      {/* Desktop: table */}
-      <div className="hidden md:block rounded-card border border-border overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-[#F0F2F4] hover:bg-[#F0F2F4]">
-              <TableHead className="w-32">ID</TableHead>
-              <TableHead>
+      {/* Desktop */}
+      <div className="hidden md:block overflow-hidden rounded-xl border border-slate-200">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="bg-slate-50 border-b border-slate-200">
+              <th className={thCls}>ID</th>
+              <th className={thCls}>
                 <button
                   onClick={() => toggleSort("status")}
-                  aria-label={`Ordenar por status ${sortField === "status" ? (sortDir === "asc" ? "descendente" : "ascendente") : "descendente"}`}
-                  className="flex items-center gap-1 text-text-secondary hover:text-text-primary"
+                  className="flex items-center gap-1.5 hover:text-slate-700 transition-colors"
                 >
-                  Status <ArrowUpDown className="w-3 h-3" aria-hidden="true" />
+                  Status <SortIcon field="status" sortField={sortField} sortDir={sortDir} />
                 </button>
-              </TableHead>
-              <TableHead>
+              </th>
+              <th className={thCls}>
                 <button
                   onClick={() => toggleSort("amount")}
-                  aria-label={`Ordenar por valor ${sortField === "amount" ? (sortDir === "asc" ? "descendente" : "ascendente") : "descendente"}`}
-                  className="flex items-center gap-1 text-text-secondary hover:text-text-primary"
+                  className="flex items-center gap-1.5 hover:text-slate-700 transition-colors"
                 >
-                  Valor <ArrowUpDown className="w-3 h-3" aria-hidden="true" />
+                  Valor <SortIcon field="amount" sortField={sortField} sortDir={sortDir} />
                 </button>
-              </TableHead>
-              <TableHead>Moeda</TableHead>
-              <TableHead>
+              </th>
+              <th className={thCls}>Chave</th>
+              <th className={thCls}>
                 <button
                   onClick={() => toggleSort("created_at")}
-                  aria-label={`Ordenar por data ${sortField === "created_at" ? (sortDir === "asc" ? "descendente" : "ascendente") : "descendente"}`}
-                  className="flex items-center gap-1 text-text-secondary hover:text-text-primary"
+                  className="flex items-center gap-1.5 hover:text-slate-700 transition-colors"
                 >
-                  Data <ArrowUpDown className="w-3 h-3" aria-hidden="true" />
+                  Quando <SortIcon field="created_at" sortField={sortField} sortDir={sortDir} />
                 </button>
-              </TableHead>
-              <TableHead>Cartão</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
             {items.map((tx) => (
-              <TableRow
+              <tr
                 key={tx.transaction_id}
-                className={`cursor-pointer hover:bg-surface ${
-                  tx.status === "UNKNOWN" ? "bg-[#FFFBEB]" : ""
-                }`}
                 onClick={() => router.push(`/dashboard/transactions/${tx.transaction_id}`)}
+                className={`cursor-pointer transition-colors hover:bg-slate-50 ${
+                  tx.status === "UNKNOWN" && resolveDisplayStatus(tx) === "UNKNOWN"
+                    ? "bg-amber-50/50"
+                    : "bg-white"
+                }`}
               >
-                <TableCell>
+                <td className={tdCls}>
                   <Tooltip>
-                    <TooltipTrigger className="cursor-default">
+                    <TooltipTrigger>
                       <Link
                         href={`/dashboard/transactions/${tx.transaction_id}`}
-                        className="font-mono text-xs text-text-secondary hover:text-primary"
                         onClick={(e) => e.stopPropagation()}
+                        className="font-mono text-xs text-slate-500 hover:text-[#0D2B1E] transition-colors"
                       >
                         {tx.transaction_id.slice(0, 8)}…
                       </Link>
                     </TooltipTrigger>
                     <TooltipContent>{tx.transaction_id}</TooltipContent>
                   </Tooltip>
-                  {tx.status === "UNKNOWN" && (
-                    <span className="ml-2 text-[11px] text-[#D97706] font-medium">
-                      Em reconciliação
+                  {tx.status === "UNKNOWN" && resolveDisplayStatus(tx) === "UNKNOWN" && (
+                    <span className="ml-2 text-[10px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
+                      reconciliação
                     </span>
                   )}
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={tx.status} />
-                </TableCell>
-                <TableCell className="font-semibold text-text-primary">
+                </td>
+                <td className={tdCls}>
+                  <StatusBadge status={resolveDisplayStatus(tx)} />
+                </td>
+                <td className={`${tdCls} font-semibold text-slate-900 tabular-nums`}>
                   {formatCurrency(tx.amount, tx.currency)}
-                </TableCell>
-                <TableCell className="text-text-secondary text-xs">{tx.currency}</TableCell>
-                <TableCell>
+                </td>
+                <td className={`${tdCls} font-mono text-xs text-slate-400`}>
+                  {tx.idempotency_key ? tx.idempotency_key.slice(0, 8) + "…" : <span className="text-slate-300">—</span>}
+                </td>
+                <td className={tdCls}>
                   <Tooltip>
-                    <TooltipTrigger className="text-sm text-text-secondary">
+                    <TooltipTrigger className="text-slate-500 text-xs">
                       {formatRelativeTime(tx.created_at)}
                     </TooltipTrigger>
                     <TooltipContent>
                       {new Date(tx.created_at).toLocaleString("pt-BR")}
                     </TooltipContent>
                   </Tooltip>
-                </TableCell>
-                <TableCell className="text-sm text-text-secondary">
-                  {tx.masked_card ?? "—"}
-                </TableCell>
-              </TableRow>
+                </td>
+              </tr>
             ))}
-          </TableBody>
-        </Table>
+          </tbody>
+        </table>
       </div>
 
+      {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-text-secondary">
-            {totalItems} transações · página {page} de {totalPages}
+        <div className="flex items-center justify-between pt-1">
+          <span className="text-xs text-slate-400">
+            {totalItems} registros · página {page} de {totalPages}
           </span>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
+          <div className="flex gap-1.5">
+            <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
+              className="h-8 px-3 text-xs rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Anterior
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
+            </button>
+            <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
+              className="h-8 px-3 text-xs rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Próxima
-            </Button>
+            </button>
           </div>
         </div>
       )}

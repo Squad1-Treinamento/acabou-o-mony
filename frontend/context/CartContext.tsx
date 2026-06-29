@@ -20,13 +20,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem("mony_cart");
+      const stored = sessionStorage.getItem("mony_cart");
       if (stored) setItems(JSON.parse(stored));
     } catch {}
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("mony_cart", JSON.stringify(items));
+    sessionStorage.setItem("mony_cart", JSON.stringify(items));
   }, [items]);
 
   const addToCart = useCallback((product: Product) => {

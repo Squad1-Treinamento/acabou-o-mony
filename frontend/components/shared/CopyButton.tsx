@@ -15,12 +15,12 @@ interface CopyButtonProps {
 
 export function CopyButton({ value, label = "Copiar" }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(value);
     } catch {
-      // Fallback for browsers that deny Clipboard API permission
       const ta = document.createElement("textarea");
       ta.value = value;
       ta.style.position = "fixed";
@@ -35,7 +35,7 @@ export function CopyButton({ value, label = "Copiar" }: CopyButtonProps) {
   }
 
   return (
-    <Tooltip open={copied ? true : undefined}>
+    <Tooltip open={copied || isHovered} onOpenChange={setIsHovered}>
       <TooltipTrigger
         onClick={handleCopy}
         aria-label={label}

@@ -183,6 +183,14 @@ public class PaymentOrchestrationService {
             
         } catch (Exception e) {
             logger.error("Error processing payment: transaction_id={}, error={}", transaction.getId(), e.getMessage(), e);
+            if (transaction.getStatus() == PaymentStatus.VALIDATED) {
+                try {
+                    transitionState(transaction, PaymentStatus.FAILED, "system");
+                    outboxEventService.createPaymentFailedEvent(transaction);
+                } catch (Exception te) {
+                    logger.error("Failed to transition stuck VALIDATED transaction to FAILED: transaction_id={}", transaction.getId(), te);
+                }
+            }
             throw e;
         }
     }

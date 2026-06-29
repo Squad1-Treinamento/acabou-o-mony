@@ -11,7 +11,7 @@ export async function listPayments(): Promise<PaymentResponse[]> {
 }
 
 async function parseOrThrow(response: Response): Promise<PaymentResponse> {
-  if (!response.ok && response.status !== 401) {
+  if (!response.ok) {
     let message = `HTTP ${response.status}`;
     try {
       const body = await response.json();
