@@ -14,12 +14,21 @@ function App() {
     }
   }, [apiKey]);
 
-  const testApiCall = async () => {
+      const testApiCall = async () => {
     if (!merchantId) return;
     
     try {
-      const transactions = await apiClient.getTransactions(merchantId);
-      setTestResult(`Success! Found ${transactions.length} transactions`);
+      // Create a test payment with correct structure
+      const payment = await apiClient.createPayment({
+        amount: 10000, // $100.00 in cents
+        currency: 'USD',
+        idempotency_key: crypto.randomUUID(),
+        payment_method: {
+          card_token_id: 'test_card_token_123',
+          masked_card: '411111XXXXXX1111',
+        },
+      });
+      setTestResult(`Success! Payment created: ${payment.transaction_id} - Status: ${payment.status}`);
     } catch (error: any) {
       setTestResult(`Error: ${error.message} (status: ${error.status})`);
     }
@@ -38,7 +47,7 @@ function App() {
           
           {!isAuthenticated ? (
             <button
-              onClick={() => login('m_123', 'sk_test_abc')}
+              onClick={() => login('00000000-0000-0000-0000-000000000001', 'teste_key')}
               className="mt-2 px-4 py-2 bg-blue-600 text-white rounded"
             >
               Test Login

@@ -1,7 +1,9 @@
 import axios, { type AxiosError, type AxiosInstance } from 'axios';
 import type { PaymentRequest, PaymentResponse, TransactionDetails, ApiError } from '../types/payment.ts';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+// Use relative path to leverage Vite proxy (avoids CORS in development)
+// In production, set VITE_API_URL to the actual backend URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
 class ApiClient {
   private client: AxiosInstance;

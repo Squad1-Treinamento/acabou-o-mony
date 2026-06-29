@@ -39,25 +39,28 @@ public class SecurityConfig {
      * - Allows health check endpoints without authentication
      * - Registers API key authentication filter
      */
-    @Bean
+        @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // 1. Modern Lambda style for disabling CSRF
+                // 1. Enable CORS with default configuration (uses CorsConfigurationSource bean)
+                .cors(cors -> cors.configure(http))
+
+                // 2. Modern Lambda style for disabling CSRF
                 .csrf(AbstractHttpConfigurer::disable)
 
-                // 2. Modern Lambda style for Session Management
+                // 3. Modern Lambda style for Session Management
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
-                // 3. Modern Lambda style for Authorization Request Rules
+                // 4. Modern Lambda style for Authorization Request Rules
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers("/api/v1/payments/**").authenticated()
                         .anyRequest().permitAll()
                 )
 
-                // 4. Custom filters remain configured similarly
+                // 5. Custom filters remain configured similarly
                 .addFilterBefore(apiKeyAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

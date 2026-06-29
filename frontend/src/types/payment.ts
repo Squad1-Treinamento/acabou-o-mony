@@ -9,13 +9,18 @@ export type PaymentStatus =
   | 'FAILED'
   | 'UNKNOWN';
 
+export interface PaymentMethod {
+  card_token_id: string;
+  masked_card?: string;
+}
+
 export interface PaymentRequest {
-  merchant_id: string;
   amount: number;           // cents
   currency: string;         // "BRL" | "USD"
-  card_token: string;
-  customer_id?: string;
   idempotency_key: string;  // UUID
+  payment_method: PaymentMethod;
+  customer_id?: string;
+  customer_email?: string;
 }
 
 export interface PaymentResponse {
