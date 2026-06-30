@@ -1,31 +1,7 @@
-# Task 06: Transaction List
-
-**Status**: ✅ Completed  
-**Estimated Time**: 2 hours
-
-## Goal
-
-Create transaction list screen with filtering and detail view navigation.
-
-## Acceptance Criteria
-
-- [x] Fetch and display all transactions for merchant
-- [x] Table with transaction data
-- [x] Filter by status
-- [x] Click row to view details
-- [x] Handle empty state
-- [x] Handle loading and error states
-
-## Implementation Steps
-
-### 1. Create TransactionList Component
-
-**`src/components/TransactionList.tsx`**:
-```typescript
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../services/api';
-import { TransactionDetails, PaymentStatus } from '../types/payment';
+import type { TransactionDetails, PaymentStatus } from '../types/payment';
 
 interface TransactionListProps {
   onSelectTransaction: (transactionId: string) => void;
@@ -39,9 +15,26 @@ export function TransactionList({ onSelectTransaction }: TransactionListProps) {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
+  const fetchTransactions = useCallback(async () => {
+    if (!merchantId) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await apiClient.getTransactions(merchantId);
+      setTransactions(data);
+      setFilteredTransactions(data);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load transactions');
+    } finally {
+      setLoading(false);
+    }
+  }, [merchantId]);
+
   useEffect(() => {
     fetchTransactions();
-  }, [merchantId]);
+  }, [fetchTransactions]);
 
   useEffect(() => {
     if (statusFilter === 'ALL') {
@@ -52,23 +45,6 @@ export function TransactionList({ onSelectTransaction }: TransactionListProps) {
       );
     }
   }, [statusFilter, transactions]);
-
-  const fetchTransactions = async () => {
-    if (!merchantId) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const data = await apiClient.getTransactions(merchantId);
-      setTransactions(data);
-      setFilteredTransactions(data);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const getStatusColor = (status: PaymentStatus) => {
     switch (status) {
@@ -220,132 +196,3 @@ export function TransactionList({ onSelectTransaction }: TransactionListProps) {
     </div>
   );
 }
-```
-
-### 2. Update App.tsx to Include Tab Navigation
-
-**`src/App.tsx`**:
-```typescript
-import { useAuth } from './context/AuthContext';
-import { LoginForm } from './components/LoginForm';
-import { PaymentForm } from './components/PaymentForm';
-import { TransactionList } from './components/TransactionList';
-import { apiClient } from './services/api';
-import { useEffect, useState } from 'react';
-
-type Tab = 'payment' | 'transactions';
-
-function App() {
-  const { isAuthenticated, apiKey, merchantId, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<Tab>('payment');
-  const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (apiKey) {
-      apiClient.setApiKey(apiKey);
-    } else {
-      apiClient.clearApiKey();
-    }
-  }, [apiKey]);
-
-  if (!isAuthenticated) {
-    return <LoginForm />;
-  }
-
-  const handleSelectTransaction = (transactionId: string) => {
-    setSelectedTransactionId(transactionId);
-    // Will implement details view in next task
-    alert(`Selected transaction: ${transactionId}`);
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Acabou o Mony</h1>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">Merchant: {merchantId}</span>
-            <button
-              onClick={logout}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <nav className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4">
-          <div className="flex space-x-8">
-            <button
-              onClick={() => setActiveTab('payment')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'payment'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Create Payment
-            </button>
-            <button
-              onClick={() => setActiveTab('transactions')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'transactions'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Transactions
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      <main className="container mx-auto px-4 py-8">
-        {activeTab === 'payment' && <PaymentForm />}
-        {activeTab === 'transactions' && (
-          <TransactionList onSelectTransaction={handleSelectTransaction} />
-        )}
-      </main>
-    </div>
-  );
-}
-
-export default App;
-```
-
-## Validation
-
-```bash
-# Type checking
-npm run type-check
-
-# Start backend
-# Make sure backend is running with some test transactions
-
-# Start dev server
-npm run dev
-
-# Manual testing:
-# 1. Login
-# 2. Click "Transactions" tab
-# 3. Should show list of transactions
-# 4. Try filtering by status
-# 5. Click on a transaction row
-# 6. Should show alert with transaction ID (temporary)
-# 7. Click "Refresh" button
-# 8. Should reload transactions
-```
-
-## Files Created
-
-- `src/components/TransactionList.tsx`
-
-## Files Modified
-
-- `src/App.tsx` (added tab navigation)
-
-## Next Task
-
-`07-transaction-details.md` - Create transaction details screen

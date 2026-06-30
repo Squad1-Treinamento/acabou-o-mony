@@ -24,7 +24,7 @@ Build a **single-page application** with mock login and 5 functional screens (ta
 - [x] `03-api-client.md` - Axios client with auth headers
 - [x] `04-login-screen.md` - Mock login form
 - [x] `05-payment-form.md` - Payment processing screen
-- [ ] `06-transaction-list.md` - Transaction list screen
+- [x] `06-transaction-list.md` - Transaction list screen
 - [ ] `07-transaction-details.md` - Transaction details screen
 - [ ] `08-idempotency-test.md` - Idempotency testing screen
 
