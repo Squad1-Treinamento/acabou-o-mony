@@ -1,26 +1,3 @@
-# Task 04: Login Screen
-
-**Status**: ✅ Completed  
-**Estimated Time**: 1.5 hours
-
-## Goal
-
-Create mock login form component with validation.
-
-## Acceptance Criteria
-
-- [x] Login form with merchant_id and api_key fields
-- [x] Form validation (required fields)
-- [x] Submit button disabled when invalid
-- [x] Store credentials in AuthContext on submit
-- [x] Show success message after login
-
-## Implementation Steps
-
-### 1. Create LoginForm Component
-
-**`src/components/LoginForm.tsx`**:
-```typescript
 import { useState, FormEvent } from 'react';
 import { useAuth } from '../context/AuthContext';
 
@@ -34,7 +11,6 @@ export function LoginForm() {
     e.preventDefault();
     setError('');
 
-    // Validation
     if (!merchantId.trim()) {
       setError('Merchant ID is required');
       return;
@@ -45,7 +21,6 @@ export function LoginForm() {
       return;
     }
 
-    // Mock login (no backend call)
     login(merchantId.trim(), apiKey.trim());
   };
 
@@ -130,80 +105,3 @@ export function LoginForm() {
     </div>
   );
 }
-```
-
-### 2. Update App.tsx to Use LoginForm
-
-**`src/App.tsx`**:
-```typescript
-import { useAuth } from './context/AuthContext';
-import { LoginForm } from './components/LoginForm';
-import { apiClient } from './services/api';
-import { useEffect } from 'react';
-
-function App() {
-  const { isAuthenticated, apiKey } = useAuth();
-
-  useEffect(() => {
-    if (apiKey) {
-      apiClient.setApiKey(apiKey);
-    } else {
-      apiClient.clearApiKey();
-    }
-  }, [apiKey]);
-
-  if (!isAuthenticated) {
-    return <LoginForm />;
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-900">
-          Dashboard
-        </h1>
-        <p className="mt-2 text-gray-600">
-          You are logged in!
-        </p>
-      </div>
-    </div>
-  );
-}
-
-export default App;
-```
-
-## Validation
-
-```bash
-# Type checking
-npm run type-check
-
-# Linting
-npm run lint
-
-# Start dev server
-npm run dev
-
-# Manual testing:
-# 1. Should show login form on page load
-# 2. Submit button should be disabled when fields are empty
-# 3. Enter merchant_id and api_key
-# 4. Submit button should be enabled
-# 5. Click submit
-# 6. Should show "Dashboard" page (logged in)
-# 7. Refresh page
-# 8. Should show login form again (no persistence yet)
-```
-
-## Files Created
-
-- `src/components/LoginForm.tsx`
-
-## Files Modified
-
-- `src/App.tsx` (conditional rendering based on auth state)
-
-## Next Task
-
-`05-payment-form.md` - Create payment processing form
