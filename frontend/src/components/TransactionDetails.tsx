@@ -127,8 +127,8 @@ export function TransactionDetails({ transactionId, onBack }: TransactionDetails
             <label className="nu-label text-xs uppercase tracking-wider">
               Transaction ID
             </label>
-            <code className="block text-sm bg-nu-bg px-3 py-2.5 rounded-lg font-mono text-nu-text-primary">
-              {transaction.id}
+                        <code className="block text-sm bg-nu-bg px-3 py-2.5 rounded-lg font-mono text-nu-text-primary">
+              {transaction.transaction_id}
             </code>
           </div>
 

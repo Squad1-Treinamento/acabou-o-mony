@@ -1,16 +1,21 @@
 import { useAuth } from './context/AuthContext';
 import { LoginForm } from './components/LoginForm';
+import { Dashboard } from './components/Dashboard';
 import { PaymentForm } from './components/PaymentForm';
 import { TransactionList } from './components/TransactionList';
 import { TransactionDetails } from './components/TransactionDetails';
+import { IdempotencyTest } from './components/IdempotencyTest';
 import { apiClient } from './services/api';
 import { useState } from 'react';
 
-type Tab = 'payment' | 'transactions' | 'details';
+type Tab = 'dashboard' | 'transactions' | 'details' | 'developer-tools';
+type DevToolsTab = 'create-payment' | 'idempotency-test';
 
 function App() {
   const { isAuthenticated, apiKey, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<Tab>('payment');
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [showDevTools, setShowDevTools] = useState(false);
+  const [devToolsTab, setDevToolsTab] = useState<DevToolsTab>('create-payment');
   const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
 
   if (apiKey) {
@@ -23,9 +28,10 @@ function App() {
     return <LoginForm />;
   }
 
-  const handleSelectTransaction = (transactionId: string) => {
+    const handleSelectTransaction = (transactionId: string) => {
     setSelectedTransactionId(transactionId);
     setActiveTab('details');
+    setShowDevTools(false);
   };
 
   const handleBackToList = () => {
@@ -54,43 +60,116 @@ function App() {
         </div>
       </header>
 
-      <nav className="bg-nu-surface px-4">
+            <nav className="bg-nu-surface px-4">
         <div className="container mx-auto">
-          <div className="flex gap-8">
+          <div className="flex items-center gap-8">
+            {/* Merchant Section */}
             <button
-              onClick={() => setActiveTab('payment')}
+              onClick={() => {
+                setActiveTab('dashboard');
+                setShowDevTools(false);
+              }}
               className={`py-3 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
-                activeTab === 'payment'
+                activeTab === 'dashboard'
                   ? 'border-nu-purple text-nu-purple'
                   : 'border-transparent text-nu-text-muted hover:text-nu-text-secondary'
               }`}
             >
-              Create Payment
+              🏠 Dashboard
             </button>
+            
             <button
-              onClick={() => setActiveTab('transactions')}
+              onClick={() => {
+                setActiveTab('transactions');
+                setShowDevTools(false);
+              }}
               className={`py-3 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
                 activeTab === 'transactions' || activeTab === 'details'
                   ? 'border-nu-purple text-nu-purple'
                   : 'border-transparent text-nu-text-muted hover:text-nu-text-secondary'
               }`}
             >
-              Transactions
+              💳 Transactions
             </button>
+
+            {/* Developer Tools - Right Side */}
+            <div className="ml-auto">
+              <button
+                onClick={() => {
+                  setShowDevTools(!showDevTools);
+                  if (!showDevTools) {
+                    setActiveTab('developer-tools');
+                  } else {
+                    setActiveTab('dashboard');
+                  }
+                }}
+                className={`py-3 px-4 rounded-full font-medium text-sm transition-all duration-200 ${
+                  activeTab === 'developer-tools'
+                    ? 'bg-nu-purple-light text-nu-purple'
+                    : 'bg-transparent text-nu-text-muted hover:bg-nu-purple-light/50 hover:text-nu-purple'
+                }`}
+              >
+                🧪 Developer Tools {showDevTools ? '▼' : '▶'}
+              </button>
+            </div>
           </div>
+
+          {/* Developer Tools Submenu */}
+          {showDevTools && (
+            <div className="flex gap-4 pl-8 py-2 border-t border-nu-border mt-2 animate-fadeIn">
+              <button
+                onClick={() => setDevToolsTab('create-payment')}
+                className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                  devToolsTab === 'create-payment'
+                    ? 'bg-nu-purple-light text-nu-purple'
+                    : 'text-nu-text-muted hover:bg-nu-purple-light/30 hover:text-nu-purple'
+                }`}
+              >
+                Create Payment
+              </button>
+              <button
+                onClick={() => setDevToolsTab('idempotency-test')}
+                className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                  devToolsTab === 'idempotency-test'
+                    ? 'bg-nu-purple-light text-nu-purple'
+                    : 'text-nu-text-muted hover:bg-nu-purple-light/30 hover:text-nu-purple'
+                }`}
+              >
+                Idempotency Test
+              </button>
+            </div>
+          )}
         </div>
       </nav>
 
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
-        {activeTab === 'payment' && <PaymentForm />}
+            <main className="container mx-auto px-4 py-8 max-w-6xl">
+        {activeTab === 'dashboard' && (
+          <Dashboard
+            onNavigateToTransactions={() => setActiveTab('transactions')}
+            onNavigateToDevTools={() => {
+              setActiveTab('developer-tools');
+              setShowDevTools(true);
+            }}
+            onSelectTransaction={handleSelectTransaction}
+          />
+        )}
+        
         {activeTab === 'transactions' && (
           <TransactionList onSelectTransaction={handleSelectTransaction} />
         )}
+        
         {activeTab === 'details' && selectedTransactionId && (
           <TransactionDetails
             transactionId={selectedTransactionId}
             onBack={handleBackToList}
           />
+        )}
+        
+        {activeTab === 'developer-tools' && (
+          <>
+            {devToolsTab === 'create-payment' && <PaymentForm />}
+            {devToolsTab === 'idempotency-test' && <IdempotencyTest />}
+          </>
         )}
       </main>
     </div>
