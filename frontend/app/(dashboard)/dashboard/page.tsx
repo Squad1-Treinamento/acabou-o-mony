@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { RefreshCw } from "lucide-react";
 import { TransactionTable } from "@/components/dashboard/TransactionTable";
 import { FilterBar } from "@/components/dashboard/FilterBar";
@@ -132,8 +132,14 @@ function StatCard({ label, value, bar, active, onClick, tooltipContent }: StatCa
 export default function DashboardPage() {
   const [filters, setFilters] = useState<TransactionFilters>({});
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
+  const [spinning, setSpinning] = useState(false);
 
   const { data: transactions = [], isLoading, refetch } = useTransactionList();
+
+  const handleRefetch = useCallback(() => {
+    setSpinning(true);
+    refetch().finally(() => setTimeout(() => setSpinning(false), 600));
+  }, [refetch]);
 
   const stats = {
     completed: transactions.filter((t) => STATUS_GROUP.completed.includes(resolveDisplayStatus(t))).length,
@@ -214,10 +220,10 @@ export default function DashboardPage() {
             )}
           </div>
           <button
-            onClick={() => refetch()}
+            onClick={handleRefetch}
             className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-700 transition-colors"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
+            <RefreshCw className={`w-3.5 h-3.5 transition-transform ${spinning ? "animate-spin" : ""}`} />
             Atualizar
           </button>
         </div>

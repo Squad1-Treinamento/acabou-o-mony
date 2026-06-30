@@ -13,7 +13,6 @@ const ALL_STATUSES: { status: PaymentStatus; description: string }[] = [
   { status: "CHALLENGE_PENDING", description: "Aguardando autenticação 3DS pelo portador do cartão." },
   { status: "DECLINED",        description: "Pagamento recusado pela adquirente ou banco emissor." },
   { status: "FAILED",          description: "Erro interno durante o processamento." },
-  { status: "UNKNOWN",         description: "Resposta da adquirente não recebida — em reconciliação." },
 ];
 
 const inputCls =

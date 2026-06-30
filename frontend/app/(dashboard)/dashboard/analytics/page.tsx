@@ -115,8 +115,9 @@ export default function AnalyticsPage() {
 
   const revenue    = completed.reduce((s, t) => s + t.amount, 0);
   const avgTicket  = completed.length > 0 ? revenue / completed.length : null;
-  const successRate = transactions.length > 0
-    ? (completed.length / transactions.length) * 100
+  const resolved = completed.length + failed.length;
+  const successRate = resolved > 0
+    ? (completed.length / resolved) * 100
     : null;
 
   const dailyData  = getDailyRevenue(transactions);
