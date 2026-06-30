@@ -30,8 +30,18 @@ public class PaymentResponseDTO {
      * - Webhook correlation
      * - Merchant reconciliation
      */
-    @JsonProperty("transaction_id")
+        @JsonProperty("transaction_id")
     private UUID transactionId;
+    
+    /**
+     * Merchant identifier.
+     * 
+     * Used for merchant isolation and reconciliation.
+     * Only returned in GET /api/v1/payments endpoint.
+     * Optional (may be null for POST responses)
+     */
+    @JsonProperty("merchant_id")
+    private UUID merchantId;
     
     /**
      * Current payment status.

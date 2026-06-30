@@ -34,14 +34,16 @@ export interface PaymentResponse {
 }
 
 export interface TransactionDetails {
-  id: string;
+  transaction_id: string;
   merchant_id: string;
   amount: number;
   currency: string;
   status: PaymentStatus;
-  masked_card: string;
+  masked_card?: string;
+  idempotency_key?: string;
   acquirer_reference?: string;
   challenge_id?: string;
+  acs_url?: string;
   created_at: string;
   updated_at: string;
 }

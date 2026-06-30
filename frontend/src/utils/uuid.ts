@@ -7,5 +7,6 @@ export function generateUUID(): string {
 }
 
 export function generateIdempotencyKey(): string {
-  return `req_${generateUUID()}`;
+  return generateUUID();
 }
+

@@ -138,15 +138,15 @@ export function TransactionList({ onSelectTransaction }: TransactionListProps) {
                 <th className="px-6 py-4 text-left text-xs font-semibold text-nu-text-muted uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-nu-border">
+                        <tbody className="divide-y divide-nu-border">
               {filteredTransactions.map((tx) => (
                 <tr
-                  key={tx.id}
+                  key={tx.transaction_id}
                   className="hover:bg-nu-purple-light/30 cursor-pointer transition-colors duration-150"
-                  onClick={() => onSelectTransaction(tx.id)}
+                  onClick={() => onSelectTransaction(tx.transaction_id)}
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-nu-text-primary">
-                    {tx.id.substring(0, 8)}...
+                    {tx.transaction_id.substring(0, 8)}...
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-nu-text-muted">
                     {tx.merchant_id.substring(0, 12)}...
@@ -162,11 +162,11 @@ export function TransactionList({ onSelectTransaction }: TransactionListProps) {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-nu-text-secondary">
                     {formatDate(tx.created_at)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        onSelectTransaction(tx.id);
+                        onSelectTransaction(tx.transaction_id);
                       }}
                       className="text-nu-purple hover:text-nu-purple-dark font-medium transition-colors"
                     >

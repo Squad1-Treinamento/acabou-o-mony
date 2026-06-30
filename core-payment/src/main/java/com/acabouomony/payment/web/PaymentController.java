@@ -11,14 +11,18 @@ import com.acabouomony.payment.web.dto.PaymentResponseDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import jakarta.validation.Valid;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * REST controller for payment processing.
@@ -256,12 +260,84 @@ public class PaymentController {
                 return response;
             }
             
-        } catch (PaymentValidationException e) {
+                } catch (PaymentValidationException e) {
             logger.warn("Payment validation failed: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         } catch (Exception e) {
             logger.error("Unexpected error during payment processing", e);
             return ResponseEntity.internalServerError().build();
         }
+    }
+
+    /**
+     * Retrieves all transactions for the authenticated merchant.
+     * 
+     * Authentication: Required (API key via Authorization header)
+     * 
+     * Response:
+     * - 200 OK: List of transactions (may be empty)
+     * - 401 Unauthorized: If authentication fails
+     * - 500 Internal Server Error: If unexpected error occurs
+     * 
+     * Security:
+     * - Merchant isolation enforced (queries only authenticated merchant's transactions)
+     * - Merchant ID extracted from SecurityContext (set by ApiKeyAuthenticationFilter)
+     * 
+     * @return ResponseEntity with list of payment responses
+     */
+    @GetMapping
+    public ResponseEntity<List<PaymentResponseDTO>> getTransactions() {
+        try {
+            // Extract authenticated merchant ID from SecurityContext
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            
+            if (authentication == null || authentication.getPrincipal() == null) {
+                logger.error("No authentication found in SecurityContext");
+                return ResponseEntity.status(401).build();
+            }
+            
+            String merchantIdStr = authentication.getPrincipal().toString();
+            UUID merchantId = UUID.fromString(merchantIdStr);
+            
+            logger.info("Fetching transactions for merchant: {}", merchantId);
+            
+            // Query transactions for authenticated merchant
+            List<Transaction> transactions = transactionRepository.findByMerchantId(merchantId);
+            
+            logger.debug("Found {} transactions for merchant {}", transactions.size(), merchantId);
+            
+            // Map to response DTOs
+            List<PaymentResponseDTO> response = transactions.stream()
+                .map(this::mapTransactionToResponse)
+                .collect(Collectors.toList());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            logger.error("Error fetching transactions", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Maps Transaction entity to PaymentResponseDTO.
+     * 
+     * @param transaction The transaction entity
+     * @return PaymentResponseDTO with mapped fields
+     */
+        private PaymentResponseDTO mapTransactionToResponse(Transaction transaction) {
+        return PaymentResponseDTO.builder()
+            .transactionId(transaction.getId())
+            .merchantId(transaction.getMerchantId())
+            .status(transaction.getStatus())
+            .amount(transaction.getAmount())
+            .currency(transaction.getCurrency())
+            .maskedCard(transaction.getMaskedCard())
+            .createdAt(transaction.getCreatedAt())
+            .updatedAt(transaction.getUpdatedAt())
+            .idempotencyKey(transaction.getIdempotencyKey())
+            .challengeId(transaction.getChallengeId())
+            .acsUrl(transaction.getChallengeAcsUrl())
+            .build();
     }
 }
