@@ -1,7 +1,7 @@
 # Frontend MVP - Task Overview
 
 **Branch**: `frontend-mvp`  
-**Status**: Planning  
+**Status**: ✅ All tasks completed  
 **Estimated Effort**: 12-16 hours
 
 ## Goal
@@ -26,7 +26,9 @@ Build a **single-page application** with mock login and 5 functional screens (ta
 - [x] `05-payment-form.md` - Payment processing screen
 - [x] `06-transaction-list.md` - Transaction list screen
 - [x] `07-transaction-details.md` - Transaction details screen
-- [ ] `08-idempotency-test.md` - Idempotency testing screen
+- [x] `08-idempotency-test.md` - Idempotency testing screen
+
+### All 8 tasks completed!
 
 ## Total: 12-16 hours
 
@@ -34,10 +36,10 @@ Build a **single-page application** with mock login and 5 functional screens (ta
 
 - [x] Mock login works (stores credentials)
 - [x] Payment form submits to backend
-- [ ] Transaction list fetches data
-- [ ] Transaction details shows single transaction
-- [ ] Idempotency test shows duplicate detection
-- [ ] 3DS flow opens ACS URL
+- [ ] Transaction list fetches data *(manual backend test)*
+- [ ] Transaction details shows single transaction *(manual backend test)*
+- [ ] Idempotency test shows duplicate detection *(manual backend test, toggle "Advanced Mode" in PaymentForm)*
+- [ ] 3DS flow opens ACS URL *(manual backend test)*
 - [ ] All errors handled gracefully
 
 ## Validation After Each Task

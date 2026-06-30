@@ -1,6 +1,13 @@
 import axios, { type AxiosError, type AxiosInstance } from 'axios';
 import type { PaymentRequest, PaymentResponse, TransactionDetails, ApiError } from '../types/payment.ts';
 
+export interface PaymentResponseWithHeaders {
+  data: PaymentResponse;
+  headers: {
+    idempotentReplayed?: string;
+  };
+}
+
 // Use relative path to leverage Vite proxy (avoids CORS in development)
 // In production, set VITE_API_URL to the actual backend URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
@@ -58,6 +65,20 @@ class ApiClient {
     try {
       const response = await this.client.post<PaymentResponse>('/payments', request);
       return response.data;
+    } catch (error) {
+      throw this.handleError(error as AxiosError);
+    }
+  }
+
+  async createPaymentWithHeaders(request: PaymentRequest): Promise<PaymentResponseWithHeaders> {
+    try {
+      const response = await this.client.post<PaymentResponse>('/payments', request);
+      return {
+        data: response.data,
+        headers: {
+          idempotentReplayed: response.headers['x-idempotent-replayed'],
+        },
+      };
     } catch (error) {
       throw this.handleError(error as AxiosError);
     }
