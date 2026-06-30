@@ -94,14 +94,14 @@ export function PaymentForm() {
 
   const isValid = amount && parseInt(amount) > 0 && cardToken && idempotencyKey;
 
-  const inputClass = "w-full px-3 py-2.5 border border-ml-border rounded-md text-sm text-ml-text-primary placeholder-ml-text-muted focus:outline-none focus:ring-2 focus:ring-ml-blue focus:border-transparent transition-shadow";
-  const labelClass = "block text-sm font-medium text-ml-text-secondary mb-1.5";
+  const inputClass = "nu-input";
+  const labelClass = "nu-label";
 
   return (
     <div className={advancedMode ? 'max-w-6xl mx-auto' : 'max-w-2xl mx-auto'}>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-ml-text-primary">Create Payment</h2>
-        <label className="flex items-center gap-2 text-sm text-ml-text-secondary cursor-pointer select-none">
+        <h2 className="text-xl font-bold text-nu-text-primary">Create Payment</h2>
+        <label className="flex items-center gap-2 text-sm text-nu-text-secondary cursor-pointer select-none">
           <input
             type="checkbox"
             checked={advancedMode}
@@ -112,13 +112,13 @@ export function PaymentForm() {
               setSecondResponse(null);
               setError(null);
             }}
-            className="rounded border-ml-border text-ml-blue focus:ring-ml-blue"
+            className="rounded-lg border-nu-border text-nu-purple focus:ring-nu-purple/30"
           />
           Advanced Mode
         </label>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-ml-surface p-6 rounded-lg shadow-sm mb-6">
+      <form onSubmit={handleSubmit} className="nu-card mb-6">
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
             <label className={labelClass}>Amount (cents)</label>
@@ -129,7 +129,7 @@ export function PaymentForm() {
               placeholder="10000"
               className={inputClass}
             />
-            <p className="text-xs text-ml-text-muted mt-1">
+            <p className="text-xs text-nu-text-muted mt-1">
               {parseInt(amount) / 100 || 0} {currency}
             </p>
           </div>
@@ -188,20 +188,20 @@ export function PaymentForm() {
                 type="text"
                 value={idempotencyKey}
                 onChange={(e) => setIdempotencyKey(e.target.value)}
-                className="flex-1 px-3 py-2.5 border border-ml-border rounded-md font-mono text-sm text-ml-text-primary focus:outline-none focus:ring-2 focus:ring-ml-blue focus:border-transparent transition-shadow"
+                className="nu-input font-mono"
               />
             ) : (
               <input
                 type="text"
                 value={idempotencyKey}
                 readOnly
-                className="flex-1 px-3 py-2.5 border border-ml-border rounded-md font-mono text-sm text-ml-text-primary bg-gray-50"
+                className="nu-input font-mono bg-gray-50"
               />
             )}
             <button
               type="button"
               onClick={handleGenerateNewKey}
-              className="px-4 py-2.5 bg-ml-blue text-white text-sm rounded-md hover:bg-ml-blue-dark transition-colors whitespace-nowrap"
+              className="px-4 py-2.5 rounded-full bg-nu-purple-light text-nu-purple text-sm font-medium hover:bg-[#E4D5F5] transition-colors whitespace-nowrap"
             >
               New Key
             </button>
@@ -213,10 +213,10 @@ export function PaymentForm() {
             <button
               type="submit"
               disabled={!isValid || loading}
-              className={`flex-1 py-2.5 px-4 rounded-md font-semibold text-sm transition-colors ${
+              className={`flex-1 py-3 px-6 rounded-full font-semibold text-sm transition-all duration-200 ${
                 isValid && !loading
-                  ? 'bg-ml-yellow text-ml-text-primary hover:bg-ml-yellow-dark'
-                  : 'bg-gray-200 text-ml-text-muted cursor-not-allowed'
+                  ? 'nu-btn-primary'
+                  : 'bg-gray-200 text-nu-text-muted cursor-not-allowed'
               }`}
             >
               {loading ? 'Processing...' : '1. Submit Payment'}
@@ -225,10 +225,10 @@ export function PaymentForm() {
               type="button"
               onClick={handleSecondSubmit}
               disabled={!firstResponse || loading}
-              className={`flex-1 py-2.5 px-4 rounded-md font-semibold text-sm transition-colors ${
+              className={`flex-1 py-3 px-6 rounded-full font-semibold text-sm transition-all duration-200 ${
                 firstResponse && !loading
-                  ? 'bg-ml-blue text-white hover:bg-ml-blue-dark'
-                  : 'bg-gray-200 text-ml-text-muted cursor-not-allowed'
+                  ? 'bg-nu-purple-light text-nu-purple hover:bg-[#E4D5F5]'
+                  : 'bg-gray-200 text-nu-text-muted cursor-not-allowed'
               }`}
             >
               {loading ? 'Processing...' : '2. Submit Again'}
@@ -238,10 +238,8 @@ export function PaymentForm() {
           <button
             type="submit"
             disabled={!isValid || loading}
-            className={`w-full py-2.5 px-4 rounded-md font-semibold text-sm transition-colors ${
-              isValid && !loading
-                ? 'bg-ml-yellow text-ml-text-primary hover:bg-ml-yellow-dark'
-                : 'bg-gray-200 text-ml-text-muted cursor-not-allowed'
+            className={`nu-btn-primary ${
+              !isValid || loading ? 'disabled' : ''
             }`}
           >
             {loading ? 'Processing...' : 'Submit Payment'}
@@ -250,42 +248,42 @@ export function PaymentForm() {
       </form>
 
       {error && (
-        <div className="mb-6 bg-red-50 border border-ml-red/20 rounded-lg p-4">
-          <p className="text-sm text-ml-red">{error}</p>
+        <div className="mb-6 bg-red-50 border border-nu-error/20 rounded-xl p-4">
+          <p className="text-sm text-nu-error">{error}</p>
         </div>
       )}
 
       {!advancedMode && response && (
-        <div className="bg-ml-surface border border-ml-green/20 rounded-lg p-6 shadow-sm">
-          <h3 className="text-lg font-bold text-ml-green mb-4">Payment Response</h3>
-          <div className="space-y-2 text-sm text-ml-text-primary">
+        <div className="nu-card border border-nu-success/20">
+          <h3 className="text-lg font-bold text-nu-success mb-4">Payment Response</h3>
+          <div className="space-y-2 text-sm text-nu-text-primary">
             <p>
-              <span className="text-ml-text-secondary">Transaction ID:</span>{' '}
-              <code className="bg-ml-green/5 px-2 py-0.5 rounded font-mono text-xs">{response.transaction_id}</code>
+              <span className="text-nu-text-secondary">Transaction ID:</span>{' '}
+              <code className="bg-emerald-50 px-2 py-0.5 rounded font-mono text-xs">{response.transaction_id}</code>
             </p>
             <p>
-              <span className="text-ml-text-secondary">Status:</span>{' '}
-              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                response.status === 'COMPLETED' ? 'bg-ml-green/10 text-ml-green' :
-                response.status === 'CHALLENGE_PENDING' ? 'bg-ml-orange/10 text-ml-orange' :
-                'bg-gray-100 text-ml-text-secondary'
-              }`}>
+              <span className="text-nu-text-secondary">Status:</span>{' '}
+              <span className={
+                response.status === 'COMPLETED' ? 'nu-badge-success' :
+                response.status === 'CHALLENGE_PENDING' ? 'nu-badge-warning' :
+                'nu-badge-neutral'
+              }>
                 {response.status}
               </span>
             </p>
             <p>
-              <span className="text-ml-text-secondary">Amount:</span>{' '}
+              <span className="text-nu-text-secondary">Amount:</span>{' '}
               <span className="font-semibold">{response.amount / 100} {response.currency}</span>
             </p>
             {response.challenge_id && (
               <>
                 <p>
-                  <span className="text-ml-text-secondary">Challenge ID:</span>{' '}
-                  <code className="bg-ml-orange/5 px-2 py-0.5 rounded font-mono text-xs">{response.challenge_id}</code>
+                  <span className="text-nu-text-secondary">Challenge ID:</span>{' '}
+                  <code className="bg-orange-50 px-2 py-0.5 rounded font-mono text-xs">{response.challenge_id}</code>
                 </p>
                 <button
                   onClick={() => handleOpen3DS(response.acs_url)}
-                  className="mt-3 w-full py-2.5 px-4 bg-ml-orange text-white rounded-md font-semibold text-sm hover:brightness-110 transition-all"
+                  className="mt-3 w-full py-3 px-6 rounded-full bg-nu-warning text-white font-semibold text-sm hover:brightness-110 transition-all"
                 >
                   Open 3DS Challenge
                 </button>
@@ -296,48 +294,48 @@ export function PaymentForm() {
       )}
 
       {advancedMode && (firstResponse || secondResponse) && (
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <h3 className="text-sm font-semibold text-ml-text-primary mb-3 uppercase tracking-wider">First Request</h3>
+            <h3 className="text-sm font-semibold text-nu-text-primary mb-3 uppercase tracking-wider">First Request</h3>
             {firstResponse && (
-              <div className="bg-ml-surface border border-ml-border rounded-lg p-4 shadow-sm">
-                <div className="mb-3 pb-3 border-b border-ml-border">
-                  <span className="text-xs font-medium text-ml-text-muted">X-Idempotent-Replayed</span>
-                  <p className="text-sm font-mono mt-0.5 text-ml-text-primary">{firstResponse.headers.idempotentReplayed || 'false'}</p>
+              <div className="nu-card">
+                <div className="mb-3 pb-3 border-b border-nu-border">
+                  <span className="text-xs font-medium text-nu-text-muted">X-Idempotent-Replayed</span>
+                  <p className="text-sm font-mono mt-0.5 text-nu-text-primary">{firstResponse.headers.idempotentReplayed || 'false'}</p>
                 </div>
-                <div className="space-y-1.5 text-sm text-ml-text-primary">
-                  <p><span className="text-ml-text-secondary">Transaction ID:</span> <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono">{firstResponse.data.transaction_id}</code></p>
-                  <p><span className="text-ml-text-secondary">Status:</span> <span className="px-1.5 py-0.5 bg-ml-green/10 text-ml-green rounded text-xs font-medium">{firstResponse.data.status}</span></p>
-                  <p><span className="text-ml-text-secondary">Amount:</span> {firstResponse.data.amount / 100} {firstResponse.data.currency}</p>
+                <div className="space-y-1.5 text-sm text-nu-text-primary">
+                  <p><span className="text-nu-text-secondary">Transaction ID:</span> <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono">{firstResponse.data.transaction_id}</code></p>
+                  <p><span className="text-nu-text-secondary">Status:</span> <span className="nu-badge-success">{firstResponse.data.status}</span></p>
+                  <p><span className="text-nu-text-secondary">Amount:</span> {firstResponse.data.amount / 100} {firstResponse.data.currency}</p>
                 </div>
               </div>
             )}
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold text-ml-text-primary mb-3 uppercase tracking-wider">Second Request</h3>
+            <h3 className="text-sm font-semibold text-nu-text-primary mb-3 uppercase tracking-wider">Second Request</h3>
             {secondResponse ? (
-              <div className="bg-ml-surface border border-ml-border rounded-lg p-4 shadow-sm">
-                <div className="mb-3 pb-3 border-b border-ml-border">
-                  <span className="text-xs font-medium text-ml-text-muted">X-Idempotent-Replayed</span>
-                  <p className={`text-sm font-mono mt-0.5 ${secondResponse.headers.idempotentReplayed === 'true' ? 'text-ml-green font-bold' : 'text-ml-red'}`}>
+              <div className="nu-card">
+                <div className="mb-3 pb-3 border-b border-nu-border">
+                  <span className="text-xs font-medium text-nu-text-muted">X-Idempotent-Replayed</span>
+                  <p className={`text-sm font-mono mt-0.5 ${secondResponse.headers.idempotentReplayed === 'true' ? 'text-nu-success font-bold' : 'text-nu-error'}`}>
                     {secondResponse.headers.idempotentReplayed || 'false'}
                   </p>
                 </div>
-                <div className="space-y-1.5 text-sm text-ml-text-primary">
-                  <p><span className="text-ml-text-secondary">Transaction ID:</span> <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono">{secondResponse.data.transaction_id}</code></p>
-                  <p><span className="text-ml-text-secondary">Status:</span> <span className="px-1.5 py-0.5 bg-ml-green/10 text-ml-green rounded text-xs font-medium">{secondResponse.data.status}</span></p>
-                  <p><span className="text-ml-text-secondary">Amount:</span> {secondResponse.data.amount / 100} {secondResponse.data.currency}</p>
+                <div className="space-y-1.5 text-sm text-nu-text-primary">
+                  <p><span className="text-nu-text-secondary">Transaction ID:</span> <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono">{secondResponse.data.transaction_id}</code></p>
+                  <p><span className="text-nu-text-secondary">Status:</span> <span className="nu-badge-success">{secondResponse.data.status}</span></p>
+                  <p><span className="text-nu-text-secondary">Amount:</span> {secondResponse.data.amount / 100} {secondResponse.data.currency}</p>
                 </div>
                 {firstResponse && secondResponse.data.transaction_id === firstResponse.data.transaction_id && (
-                  <div className="mt-3 pt-3 border-t border-ml-green/20">
-                    <p className="text-xs text-ml-green font-medium">✓ IDs match — Idempotency working!</p>
+                  <div className="mt-3 pt-3 border-t border-nu-success/20">
+                    <p className="text-xs text-nu-success font-medium">✓ IDs match — Idempotency working!</p>
                   </div>
                 )}
               </div>
             ) : (
-              <div className="bg-gray-50 border border-ml-border rounded-lg p-4 text-center">
-                <p className="text-sm text-ml-text-muted">Submit again to test idempotency</p>
+              <div className="bg-gray-50 rounded-xl p-4 text-center">
+                <p className="text-sm text-nu-text-muted">Submit again to test idempotency</p>
               </div>
             )}
           </div>

@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../services/api';
 import type { TransactionDetails, PaymentStatus } from '../types/payment';
 
@@ -8,7 +7,6 @@ interface TransactionListProps {
 }
 
 export function TransactionList({ onSelectTransaction }: TransactionListProps) {
-  const { merchantId } = useAuth();
   const [transactions, setTransactions] = useState<TransactionDetails[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<TransactionDetails[]>([]);
   const [loading, setLoading] = useState(true);
@@ -16,13 +14,11 @@ export function TransactionList({ onSelectTransaction }: TransactionListProps) {
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
   const fetchTransactions = useCallback(async () => {
-    if (!merchantId) return;
-
     setLoading(true);
     setError(null);
 
     try {
-      const data = await apiClient.getTransactions(merchantId);
+      const data = await apiClient.getTransactions();
       setTransactions(data);
       setFilteredTransactions(data);
     } catch (err: unknown) {
@@ -30,7 +26,7 @@ export function TransactionList({ onSelectTransaction }: TransactionListProps) {
     } finally {
       setLoading(false);
     }
-  }, [merchantId]);
+  }, []);
 
   useEffect(() => {
     fetchTransactions();
@@ -46,18 +42,18 @@ export function TransactionList({ onSelectTransaction }: TransactionListProps) {
     }
   }, [statusFilter, transactions]);
 
-  const getStatusColor = (status: PaymentStatus) => {
+  const getStatusBadge = (status: PaymentStatus) => {
     switch (status) {
       case 'COMPLETED':
-        return 'bg-ml-green/10 text-ml-green';
+        return 'nu-badge-success';
       case 'DECLINED':
       case 'FAILED':
-        return 'bg-ml-red/10 text-ml-red';
+        return 'nu-badge-error';
       case 'PROCESSING':
       case 'CHALLENGE_PENDING':
-        return 'bg-ml-orange/10 text-ml-orange';
+        return 'nu-badge-warning';
       default:
-        return 'bg-gray-100 text-ml-text-secondary';
+        return 'nu-badge-neutral';
     }
   };
 
@@ -72,19 +68,19 @@ export function TransactionList({ onSelectTransaction }: TransactionListProps) {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-ml-text-secondary">Loading transactions...</div>
+        <div className="text-nu-text-secondary">Loading transactions...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-ml-red/20 rounded-lg p-6">
-        <h3 className="text-lg font-bold text-ml-red mb-2">Error</h3>
-        <p className="text-sm text-ml-red/80">{error}</p>
+      <div className="bg-red-50 border border-nu-error/20 rounded-xl p-6">
+        <h3 className="text-lg font-bold text-nu-error mb-2">Error</h3>
+        <p className="text-sm text-nu-error/80">{error}</p>
         <button
           onClick={fetchTransactions}
-          className="mt-4 px-4 py-2 bg-ml-red text-white rounded-md text-sm hover:brightness-110 transition-all"
+          className="mt-4 px-4 py-2 rounded-full bg-nu-error text-white text-sm hover:brightness-110 transition-all"
         >
           Retry
         </button>
@@ -95,71 +91,75 @@ export function TransactionList({ onSelectTransaction }: TransactionListProps) {
   return (
     <div className="max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-ml-text-primary">Transactions</h2>
+        <h2 className="text-xl font-bold text-nu-text-primary">Transactions</h2>
         <button
           onClick={fetchTransactions}
-          className="px-4 py-2 bg-ml-blue text-white rounded-md text-sm hover:bg-ml-blue-dark transition-colors"
+          className="px-4 py-2 rounded-full bg-nu-purple-light text-nu-purple text-sm font-medium hover:bg-[#E4D5F5] transition-colors"
         >
           Refresh
         </button>
       </div>
 
-      <div className="bg-ml-surface rounded-lg shadow-sm p-4 mb-4">
-        <label className="block text-sm font-medium text-ml-text-secondary mb-1.5">
-          Filter by Status
-        </label>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-2 border border-ml-border rounded-md text-sm text-ml-text-primary focus:outline-none focus:ring-2 focus:ring-ml-blue focus:border-transparent"
-        >
-          <option value="ALL">All</option>
-          <option value="COMPLETED">Completed</option>
-          <option value="DECLINED">Declined</option>
-          <option value="FAILED">Failed</option>
-          <option value="PROCESSING">Processing</option>
-          <option value="CHALLENGE_PENDING">Challenge Pending</option>
-        </select>
-        <span className="ml-4 text-sm text-ml-text-muted">
-          {filteredTransactions.length} of {transactions.length}
-        </span>
+      <div className="nu-card mb-4">
+        <label className="nu-label">Filter by Status</label>
+        <div className="flex items-center gap-3">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="nu-input max-w-xs"
+          >
+            <option value="ALL">All</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="DECLINED">Declined</option>
+            <option value="FAILED">Failed</option>
+            <option value="PROCESSING">Processing</option>
+            <option value="CHALLENGE_PENDING">Challenge Pending</option>
+          </select>
+          <span className="text-sm text-nu-text-muted">
+            {filteredTransactions.length} of {transactions.length}
+          </span>
+        </div>
       </div>
 
       {filteredTransactions.length === 0 ? (
-        <div className="bg-ml-surface rounded-lg shadow-sm p-12 text-center">
-          <p className="text-ml-text-muted">No transactions found</p>
+        <div className="nu-card py-12 text-center">
+          <p className="text-nu-text-muted">No transactions found</p>
         </div>
       ) : (
-        <div className="bg-ml-surface rounded-lg shadow-sm overflow-hidden">
-          <table className="min-w-full divide-y divide-ml-border">
-            <thead className="bg-gray-50">
+        <div className="bg-nu-surface rounded-xl shadow-nu-sm overflow-hidden">
+          <table className="min-w-full divide-y divide-nu-border">
+            <thead className="bg-nu-bg">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-ml-text-muted uppercase tracking-wider">Transaction ID</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-ml-text-muted uppercase tracking-wider">Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-ml-text-muted uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-ml-text-muted uppercase tracking-wider">Created At</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-ml-text-muted uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-nu-text-muted uppercase tracking-wider">Transaction ID</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-nu-text-muted uppercase tracking-wider">Merchant</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-nu-text-muted uppercase tracking-wider">Amount</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-nu-text-muted uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-nu-text-muted uppercase tracking-wider">Created At</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-nu-text-muted uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-ml-border">
+            <tbody className="divide-y divide-nu-border">
               {filteredTransactions.map((tx) => (
                 <tr
                   key={tx.id}
-                  className="hover:bg-gray-50 cursor-pointer transition-colors"
+                  className="hover:bg-nu-purple-light/30 cursor-pointer transition-colors duration-150"
                   onClick={() => onSelectTransaction(tx.id)}
                 >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-ml-text-primary">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-nu-text-primary">
                     {tx.id.substring(0, 8)}...
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-ml-text-primary font-medium">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-nu-text-muted">
+                    {tx.merchant_id.substring(0, 12)}...
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-nu-text-primary font-medium">
                     {formatAmount(tx.amount, tx.currency)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-0.5 text-xs font-medium rounded ${getStatusColor(tx.status)}`}>
+                    <span className={`${getStatusBadge(tx.status)}`}>
                       {tx.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-ml-text-secondary">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-nu-text-secondary">
                     {formatDate(tx.created_at)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -168,7 +168,7 @@ export function TransactionList({ onSelectTransaction }: TransactionListProps) {
                         e.stopPropagation();
                         onSelectTransaction(tx.id);
                       }}
-                      className="text-ml-blue hover:text-ml-blue-dark font-medium transition-colors"
+                      className="text-nu-purple hover:text-nu-purple-dark font-medium transition-colors"
                     >
                       View Details
                     </button>

@@ -1,88 +1,67 @@
-# Frontend MVP — Session Summary
+# Frontend — Session Summary
 
-**Date:** 2026-06-29  
-**Branch:** `frontend-mvp`  
-**Stack:** Vite + React 19 + TypeScript + Tailwind CSS + Axios
+**Date:** 2026-06-30
+**Branch:** `frontend-mvp`
+**Stack:** Vite + React 19 + TypeScript + Tailwind CSS v4 + Axios
 
 ---
 
-## Tasks Completed (04–08)
+## Session 10 — Nubank Visual Identity (DNA Roxo)
 
-| Task | Files Created | Files Modified |
+Replaced all Mercado Livre (ML) styling with Nubank design system.
+
+### Files Changed
+
+| File | Change |
+|---|---|
+| `tailwind.config.js` | Esvaziado (config migrada pra CSS v4) |
+| `src/index.css` | `@import "tailwindcss"` + `@theme` com cores `nu-*` + classes utilitárias (`nu-card`, `nu-btn-primary`, `nu-input`, `nu-badge-*`) + animações |
+| `index.html` | Fonte Inter adicionada |
+| `src/App.css` | **Removido** (legado Vite) |
+| `src/App.tsx` | Header branco com título roxo, tabs com indicador roxo, shadow flutuante |
+| `src/components/LoginForm.tsx` | Card `nu-card` + `animate-fadeIn`, botão `nu-btn-primary` (roxo pill) |
+| `src/components/PaymentForm.tsx` | Inputs `nu-input` (rounded-xl, foco roxo), botões `rounded-full` |
+| `src/components/TransactionList.tsx` | Badges `nu-badge-*`, tabela com hover roxo claro |
+| `src/components/TransactionDetails.tsx` | Card `nu-card`, labels `nu-label`, code blocks `bg-nu-bg rounded-lg` |
+
+### Design Tokens (em `src/index.css`)
+
+| Token | Hex | Uso |
 |---|---|---|
-| **04 — Login Screen** | `src/components/LoginForm.tsx` | `src/App.tsx` |
-| **05 — Payment Form** | `src/utils/uuid.ts`, `src/components/PaymentForm.tsx` | `src/App.tsx` |
-| **06 — Transaction List** | `src/components/TransactionList.tsx` | `src/App.tsx` |
-| **07 — Transaction Details** | `src/components/TransactionDetails.tsx` | `src/App.tsx` |
-| **08 — Idempotency Test** | — | `src/services/api.ts`, `src/components/PaymentForm.tsx`, `src/App.tsx` |
+| `nu-purple` | `#820AD1` | Botões, links, header, tabs ativas |
+| `nu-purple-dark` | `#6A07A8` | Hover de elementos roxos |
+| `nu-purple-light` | `#F3E8FF` | Badges, backgrounds sutis |
+| `nu-bg` | `#F5F5F5` | Fundo da página |
+| `nu-surface` | `#FFFFFF` | Cards, superfícies |
+| `nu-text-primary` | `#1A1A1A` | Títulos, valores |
+| `nu-text-secondary` | `#6B6B6B` | Descrições, metadados |
+| `nu-text-muted` | `#A3A3A3` | Placeholders, hints |
+| `nu-border` | `#E8E8E8` | Bordas, divisores |
+| `nu-success` | `#00A86B` | COMPLETED |
+| `nu-error` | `#E74C3C` | DECLINED/FAILED |
+| `nu-warning` | `#FF9500` | PROCESSING/CHALLENGE_PENDING |
 
-> **Note on Task 08:** Instead of a separate "Idempotency Test" tab (which wouldn't exist in production), the functionality was integrated into the Payment Form via an **"Advanced Mode" toggle**. When enabled, the idempotency key becomes editable and two submit buttons appear for duplicate testing.
+### Key Design Decisions
 
----
+- **Tailwind v4**: Config via `@theme` em CSS, não via `tailwind.config.js`
+- **Component classes**: `.nu-card`, `.nu-btn-primary`, `.nu-input`, `.nu-badge-*` definidos em `@layer components` no `index.css`
+- **Animações mínimas**: `fadeIn` em cards, `scale(0.97)` em botões ao click
+- **Sem dark mode**: Light mode only
+- **Fonte Inter**: carregada via Google Fonts no `index.html`
 
-## Architecture Overview
+### Known Issue: 401 on GET /api/v1/payments
 
-```
-frontend/
-├── src/
-│   ├── components/
-│   │   ├── LoginForm.tsx          # Mock login (merchant_id + api_key)
-│   │   ├── PaymentForm.tsx        # Payment form + advanced mode toggle
-│   │   ├── TransactionList.tsx    # Transaction table with status filter
-│   │   └── TransactionDetails.tsx # Single transaction view
-│   ├── context/
-│   │   └── AuthContext.tsx        # Mock auth (login/logout/isAuthenticated)
-│   ├── services/
-│   │   └── api.ts                 # Axios client with auth interceptor
-│   ├── types/
-│   │   ├── auth.ts                # AuthContextType interface
-│   │   └── payment.ts            # PaymentRequest/Response, TransactionDetails, etc.
-│   ├── utils/
-│   │   └── uuid.ts                # UUID v4 + idempotency key generator
-│   ├── App.tsx                    # Tab navigation (Payment | Transactions)
-│   ├── main.tsx                   # Entry point, wraps App with AuthProvider
-│   └── index.css                  # Tailwind directives only
-├── tailwind.config.js             # Custom Mercado Livre colors
-├── vite.config.ts                 # Vite proxy → localhost:8080
-├── tsconfig.app.json              # strict, verbatimModuleSyntax
-└── package.json
-```
-
----
-
-## Key Design Decisions
-
-### Type-only imports
-`tsconfig.app.json` has `verbatimModuleSyntax: true`. All type-only imports must use `import type`. Files like `payment.ts` export **only types** (interfaces), so any import from it must be `import type`. Same applies to `FormEvent` from React.
-
-### Mercado Livre Visual Identity
-Custom Tailwind colors in `tailwind.config.js`:
-
-| Token | Hex | Usage |
-|---|---|---|
-| `ml-blue` | `#3483FA` | Header bg, secondary buttons, links |
-| `ml-blue-dark` | `#1259C3` | Hover state for blue elements |
-| `ml-yellow` | `#FFE600` | Primary CTA buttons (Submit, Login) |
-| `ml-yellow-dark` | `#E5CF00` | Hover for yellow buttons |
-| `ml-green` | `#00A650` | COMPLETED status, success messages |
-| `ml-red` | `#F23D3D` | DECLINED/FAILED status, errors |
-| `ml-orange` | `#FF7733` | PROCESSING/CHALLENGE_PENDING status |
-| `ml-bg` | `#EDEDED` | Page background |
-| `ml-surface` | `#FFFFFF` | Card backgrounds |
-| `ml-border` | `#E5E5E5` | Borders and dividers |
-
-### Cleaned up default Vite CSS
-`src/index.css` contained conflicting custom CSS (`#root { width: 1126px }`, `h1 { font-size: 56px }`, etc.) that overrode Tailwind utilities. Replaced with just the three `@tailwind` directives.
-
-### Tab Navigation (no React Router)
-Simple state-based tab switching in `App.tsx` (`type Tab = 'payment' | 'transactions' | 'details'`).
+Ao clicar na aba Transactions, o backend retorna **401 Unauthorized**.
+- **Não é causado pelas mudanças de CSS** — a lógica de auth (`api.ts`, `AuthContext.tsx`) não foi alterada.
+- Provável causa: backend em `localhost:8080` não está rodando, ou a API key `test-key` não é mais aceita pelo backend atual.
+- Credenciais usadas: `merchant_id = 00000000-0000-0000-0000-000000000001`, `api_key = test-key`.
 
 ---
 
 ## Commands
 
 ```bash
-npm run dev          # Start dev server (localhost:5173 → proxies /api → localhost:8080)
+npm run dev          # Dev server (localhost:5173 → proxy /api → localhost:8080)
 npm run type-check   # tsc --noEmit
 npm run lint         # oxlint
 npm run build        # tsc -b && vite build
@@ -90,33 +69,11 @@ npm run build        # tsc -b && vite build
 
 ---
 
-## Backend Dependencies
-
-The frontend expects:
-- Backend on `http://localhost:8080`
-- `POST /api/v1/payments` — Create payment
-- `GET /api/v1/payments?merchant_id={id}` — List transactions
-- `GET /api/v1/payments/{transaction_id}` — Get single transaction
-- Auth via `Authorization: Bearer {api_key}` header
-
----
-
-## Known Lint Warning (pre-existing)
-
-```
-src/context/AuthContext.tsx:29:17:
-  warning react(only-export-components):
-  Fast refresh only works when a file only exports components.
-```
-
-This is because `AuthContext.tsx` exports both `AuthProvider` (component) and `useAuth` (hook) from the same file — a common React pattern. Safe to ignore.
-
----
-
 ## Next Steps
 
-1. Real authentication (when backend supports it)
-2. Refunds UI
-3. Webhooks configuration
-4. Transaction search
-5. End-to-end testing with backend
+1. **Fix 401** — verificar se backend está rodando e se `test-key` é aceita
+2. Real authentication (when backend supports it)
+3. Refunds UI
+4. Webhooks configuration
+5. Transaction search
+6. End-to-end testing with backend

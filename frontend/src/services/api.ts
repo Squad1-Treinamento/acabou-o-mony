@@ -84,11 +84,13 @@ class ApiClient {
     }
   }
 
-  async getTransactions(merchantId: string): Promise<TransactionDetails[]> {
+  async getTransactions(merchantId?: string): Promise<TransactionDetails[]> {
     try {
-      const response = await this.client.get<TransactionDetails[]>('/payments', {
-        params: { merchant_id: merchantId },
-      });
+      const params: Record<string, string> = {};
+      if (merchantId) {
+        params.merchant_id = merchantId;
+      }
+      const response = await this.client.get<TransactionDetails[]>('/payments', { params });
       return response.data;
     } catch (error) {
       throw this.handleError(error as AxiosError);
