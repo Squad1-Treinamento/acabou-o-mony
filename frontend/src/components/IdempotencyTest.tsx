@@ -5,16 +5,21 @@
  * Full implementation will be done in Task 04: Extract Idempotency Test Component
  */
 
+import { DevToolsWarning } from './DevToolsWarning';
+
 export function IdempotencyTest() {
   return (
     <div className="max-w-4xl mx-auto">
+      {/* Warning Banner */}
+      <DevToolsWarning />
+      
       <div className="nu-card">
         <h2 className="text-xl font-bold text-nu-text-primary mb-4">
           Idempotency Test
         </h2>
-        <div className="bg-nu-warning/10 border border-nu-warning/20 rounded-lg p-4 mb-6">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
           <p className="text-sm text-nu-text-secondary">
-            ⚠️ <strong>Developer Tool</strong> - This feature will be implemented in Task 04.
+            ℹ️ <strong>Coming Soon</strong> - This feature will be implemented in Task 04.
           </p>
           <p className="text-sm text-nu-text-muted mt-2">
             This tool allows testing idempotency key behavior by sending duplicate payment requests.

@@ -5,6 +5,7 @@ import { apiClient } from '../services/api';
 import type { PaymentResponseWithHeaders } from '../services/api';
 import type { PaymentResponse, ApiError } from '../types/payment';
 import { generateIdempotencyKey } from '../utils/uuid';
+import { DevToolsWarning } from './DevToolsWarning';
 
 export function PaymentForm() {
   const { merchantId } = useAuth();
@@ -97,8 +98,11 @@ export function PaymentForm() {
   const inputClass = "nu-input";
   const labelClass = "nu-label";
 
-  return (
+    return (
     <div className={advancedMode ? 'max-w-6xl mx-auto' : 'max-w-2xl mx-auto'}>
+      {/* Warning Banner */}
+      <DevToolsWarning />
+      
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-nu-text-primary">Create Payment</h2>
         <label className="flex items-center gap-2 text-sm text-nu-text-secondary cursor-pointer select-none">
