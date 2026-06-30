@@ -1,4 +1,5 @@
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import type { FormEvent } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../services/api';
 import type { PaymentResponseWithHeaders } from '../services/api';
@@ -93,11 +94,14 @@ export function PaymentForm() {
 
   const isValid = amount && parseInt(amount) > 0 && cardToken && idempotencyKey;
 
+  const inputClass = "w-full px-3 py-2.5 border border-ml-border rounded-md text-sm text-ml-text-primary placeholder-ml-text-muted focus:outline-none focus:ring-2 focus:ring-ml-blue focus:border-transparent transition-shadow";
+  const labelClass = "block text-sm font-medium text-ml-text-secondary mb-1.5";
+
   return (
     <div className={advancedMode ? 'max-w-6xl mx-auto' : 'max-w-2xl mx-auto'}>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Create Payment</h2>
-        <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+        <h2 className="text-xl font-bold text-ml-text-primary">Create Payment</h2>
+        <label className="flex items-center gap-2 text-sm text-ml-text-secondary cursor-pointer select-none">
           <input
             type="checkbox"
             checked={advancedMode}
@@ -108,38 +112,34 @@ export function PaymentForm() {
               setSecondResponse(null);
               setError(null);
             }}
-            className="rounded border-gray-300"
+            className="rounded border-ml-border text-ml-blue focus:ring-ml-blue"
           />
-          Advanced Mode (test idempotency)
+          Advanced Mode
         </label>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md mb-6">
+      <form onSubmit={handleSubmit} className="bg-ml-surface p-6 rounded-lg shadow-sm mb-6">
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Amount (cents)
-            </label>
+            <label className={labelClass}>Amount (cents)</label>
             <input
               type="number"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="10000"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              className={inputClass}
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-ml-text-muted mt-1">
               {parseInt(amount) / 100 || 0} {currency}
             </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Currency
-            </label>
+            <label className={labelClass}>Currency</label>
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              className={inputClass}
             >
               <option value="BRL">BRL</option>
               <option value="USD">USD</option>
@@ -148,68 +148,60 @@ export function PaymentForm() {
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Card Token
-          </label>
+          <label className={labelClass}>Card Token</label>
           <input
             type="text"
             value={cardToken}
             onChange={(e) => setCardToken(e.target.value)}
             placeholder="tok_visa_approved"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            className={inputClass}
           />
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Customer ID (optional)
-          </label>
+          <label className={labelClass}>Customer ID (optional)</label>
           <input
             type="text"
             value={customerId}
             onChange={(e) => setCustomerId(e.target.value)}
             placeholder="cust_123"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            className={inputClass}
           />
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Customer Email (optional)
-          </label>
+          <label className={labelClass}>Customer Email (optional)</label>
           <input
             type="email"
             value={customerEmail}
             onChange={(e) => setCustomerEmail(e.target.value)}
             placeholder="customer@example.com"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            className={inputClass}
           />
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Idempotency Key
-          </label>
+          <label className={labelClass}>Idempotency Key</label>
           <div className="flex gap-2">
             {advancedMode ? (
               <input
                 type="text"
                 value={idempotencyKey}
                 onChange={(e) => setIdempotencyKey(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md font-mono text-sm"
+                className="flex-1 px-3 py-2.5 border border-ml-border rounded-md font-mono text-sm text-ml-text-primary focus:outline-none focus:ring-2 focus:ring-ml-blue focus:border-transparent transition-shadow"
               />
             ) : (
               <input
                 type="text"
                 value={idempotencyKey}
                 readOnly
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 font-mono text-sm"
+                className="flex-1 px-3 py-2.5 border border-ml-border rounded-md font-mono text-sm text-ml-text-primary bg-gray-50"
               />
             )}
             <button
               type="button"
               onClick={handleGenerateNewKey}
-              className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 whitespace-nowrap"
+              className="px-4 py-2.5 bg-ml-blue text-white text-sm rounded-md hover:bg-ml-blue-dark transition-colors whitespace-nowrap"
             >
               New Key
             </button>
@@ -221,10 +213,10 @@ export function PaymentForm() {
             <button
               type="submit"
               disabled={!isValid || loading}
-              className={`flex-1 py-2 px-4 rounded-md font-medium ${
+              className={`flex-1 py-2.5 px-4 rounded-md font-semibold text-sm transition-colors ${
                 isValid && !loading
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  ? 'bg-ml-yellow text-ml-text-primary hover:bg-ml-yellow-dark'
+                  : 'bg-gray-200 text-ml-text-muted cursor-not-allowed'
               }`}
             >
               {loading ? 'Processing...' : '1. Submit Payment'}
@@ -233,23 +225,23 @@ export function PaymentForm() {
               type="button"
               onClick={handleSecondSubmit}
               disabled={!firstResponse || loading}
-              className={`flex-1 py-2 px-4 rounded-md font-medium ${
+              className={`flex-1 py-2.5 px-4 rounded-md font-semibold text-sm transition-colors ${
                 firstResponse && !loading
-                  ? 'bg-green-600 text-white hover:bg-green-700'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  ? 'bg-ml-blue text-white hover:bg-ml-blue-dark'
+                  : 'bg-gray-200 text-ml-text-muted cursor-not-allowed'
               }`}
             >
-              {loading ? 'Processing...' : '2. Submit Again (Same Key)'}
+              {loading ? 'Processing...' : '2. Submit Again'}
             </button>
           </div>
         ) : (
           <button
             type="submit"
             disabled={!isValid || loading}
-            className={`w-full py-2 px-4 rounded-md font-medium ${
+            className={`w-full py-2.5 px-4 rounded-md font-semibold text-sm transition-colors ${
               isValid && !loading
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                ? 'bg-ml-yellow text-ml-text-primary hover:bg-ml-yellow-dark'
+                : 'bg-gray-200 text-ml-text-muted cursor-not-allowed'
             }`}
           >
             {loading ? 'Processing...' : 'Submit Payment'}
@@ -257,46 +249,43 @@ export function PaymentForm() {
         )}
       </form>
 
-      {error && !advancedMode && (
-        <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-6">
-          <h3 className="text-lg font-bold text-red-900 mb-2">Error</h3>
-          <p className="text-sm text-red-700">{error}</p>
-        </div>
-      )}
-
-      {error && advancedMode && (
-        <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-sm text-red-700">{error}</p>
+      {error && (
+        <div className="mb-6 bg-red-50 border border-ml-red/20 rounded-lg p-4">
+          <p className="text-sm text-ml-red">{error}</p>
         </div>
       )}
 
       {!advancedMode && response && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-          <h3 className="text-lg font-bold text-green-900 mb-4">Payment Response</h3>
-          <div className="space-y-2 text-sm">
+        <div className="bg-ml-surface border border-ml-green/20 rounded-lg p-6 shadow-sm">
+          <h3 className="text-lg font-bold text-ml-green mb-4">Payment Response</h3>
+          <div className="space-y-2 text-sm text-ml-text-primary">
             <p>
-              <span className="font-medium">Transaction ID:</span>{' '}
-              <code className="bg-green-100 px-2 py-1 rounded">{response.transaction_id}</code>
+              <span className="text-ml-text-secondary">Transaction ID:</span>{' '}
+              <code className="bg-ml-green/5 px-2 py-0.5 rounded font-mono text-xs">{response.transaction_id}</code>
             </p>
             <p>
-              <span className="font-medium">Status:</span>{' '}
-              <span className={`px-2 py-1 rounded ${
-                response.status === 'COMPLETED' ? 'bg-green-200 text-green-800' :
-                response.status === 'CHALLENGE_PENDING' ? 'bg-yellow-200 text-yellow-800' :
-                'bg-gray-200 text-gray-800'
+              <span className="text-ml-text-secondary">Status:</span>{' '}
+              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                response.status === 'COMPLETED' ? 'bg-ml-green/10 text-ml-green' :
+                response.status === 'CHALLENGE_PENDING' ? 'bg-ml-orange/10 text-ml-orange' :
+                'bg-gray-100 text-ml-text-secondary'
               }`}>
                 {response.status}
               </span>
             </p>
             <p>
-              <span className="font-medium">Amount:</span> {response.amount / 100} {response.currency}
+              <span className="text-ml-text-secondary">Amount:</span>{' '}
+              <span className="font-semibold">{response.amount / 100} {response.currency}</span>
             </p>
             {response.challenge_id && (
               <>
-                <p><span className="font-medium">Challenge ID:</span> <code className="bg-yellow-100 px-2 py-1 rounded">{response.challenge_id}</code></p>
+                <p>
+                  <span className="text-ml-text-secondary">Challenge ID:</span>{' '}
+                  <code className="bg-ml-orange/5 px-2 py-0.5 rounded font-mono text-xs">{response.challenge_id}</code>
+                </p>
                 <button
                   onClick={() => handleOpen3DS(response.acs_url)}
-                  className="mt-4 w-full py-2 px-4 bg-yellow-600 text-white rounded-md hover:bg-yellow-700"
+                  className="mt-3 w-full py-2.5 px-4 bg-ml-orange text-white rounded-md font-semibold text-sm hover:brightness-110 transition-all"
                 >
                   Open 3DS Challenge
                 </button>
@@ -309,46 +298,46 @@ export function PaymentForm() {
       {advancedMode && (firstResponse || secondResponse) && (
         <div className="grid grid-cols-2 gap-6">
           <div>
-            <h3 className="text-lg font-bold text-gray-900 mb-4">First Request</h3>
+            <h3 className="text-sm font-semibold text-ml-text-primary mb-3 uppercase tracking-wider">First Request</h3>
             {firstResponse && (
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <div className="mb-4">
-                  <span className="text-xs font-medium text-gray-500">X-Idempotent-Replayed</span>
-                  <p className="text-sm font-mono mt-1">{firstResponse.headers.idempotentReplayed || 'false'}</p>
+              <div className="bg-ml-surface border border-ml-border rounded-lg p-4 shadow-sm">
+                <div className="mb-3 pb-3 border-b border-ml-border">
+                  <span className="text-xs font-medium text-ml-text-muted">X-Idempotent-Replayed</span>
+                  <p className="text-sm font-mono mt-0.5 text-ml-text-primary">{firstResponse.headers.idempotentReplayed || 'false'}</p>
                 </div>
-                <div className="space-y-2 text-sm">
-                  <p><span className="font-medium">Transaction ID:</span> <code className="bg-gray-100 px-2 py-1 rounded text-xs">{firstResponse.data.transaction_id}</code></p>
-                  <p><span className="font-medium">Status:</span> <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">{firstResponse.data.status}</span></p>
-                  <p><span className="font-medium">Amount:</span> {firstResponse.data.amount / 100} {firstResponse.data.currency}</p>
+                <div className="space-y-1.5 text-sm text-ml-text-primary">
+                  <p><span className="text-ml-text-secondary">Transaction ID:</span> <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono">{firstResponse.data.transaction_id}</code></p>
+                  <p><span className="text-ml-text-secondary">Status:</span> <span className="px-1.5 py-0.5 bg-ml-green/10 text-ml-green rounded text-xs font-medium">{firstResponse.data.status}</span></p>
+                  <p><span className="text-ml-text-secondary">Amount:</span> {firstResponse.data.amount / 100} {firstResponse.data.currency}</p>
                 </div>
               </div>
             )}
           </div>
 
           <div>
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Second Request (Duplicate)</h3>
+            <h3 className="text-sm font-semibold text-ml-text-primary mb-3 uppercase tracking-wider">Second Request</h3>
             {secondResponse ? (
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <div className="mb-4">
-                  <span className="text-xs font-medium text-gray-500">X-Idempotent-Replayed</span>
-                  <p className={`text-sm font-mono mt-1 ${secondResponse.headers.idempotentReplayed === 'true' ? 'text-green-600 font-bold' : 'text-red-600'}`}>
+              <div className="bg-ml-surface border border-ml-border rounded-lg p-4 shadow-sm">
+                <div className="mb-3 pb-3 border-b border-ml-border">
+                  <span className="text-xs font-medium text-ml-text-muted">X-Idempotent-Replayed</span>
+                  <p className={`text-sm font-mono mt-0.5 ${secondResponse.headers.idempotentReplayed === 'true' ? 'text-ml-green font-bold' : 'text-ml-red'}`}>
                     {secondResponse.headers.idempotentReplayed || 'false'}
                   </p>
                 </div>
-                <div className="space-y-2 text-sm">
-                  <p><span className="font-medium">Transaction ID:</span> <code className="bg-gray-100 px-2 py-1 rounded text-xs">{secondResponse.data.transaction_id}</code></p>
-                  <p><span className="font-medium">Status:</span> <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">{secondResponse.data.status}</span></p>
-                  <p><span className="font-medium">Amount:</span> {secondResponse.data.amount / 100} {secondResponse.data.currency}</p>
+                <div className="space-y-1.5 text-sm text-ml-text-primary">
+                  <p><span className="text-ml-text-secondary">Transaction ID:</span> <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono">{secondResponse.data.transaction_id}</code></p>
+                  <p><span className="text-ml-text-secondary">Status:</span> <span className="px-1.5 py-0.5 bg-ml-green/10 text-ml-green rounded text-xs font-medium">{secondResponse.data.status}</span></p>
+                  <p><span className="text-ml-text-secondary">Amount:</span> {secondResponse.data.amount / 100} {secondResponse.data.currency}</p>
                 </div>
                 {firstResponse && secondResponse.data.transaction_id === firstResponse.data.transaction_id && (
-                  <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
-                    <p className="text-xs text-green-800 font-medium">✓ Transaction IDs match - Idempotency working correctly!</p>
+                  <div className="mt-3 pt-3 border-t border-ml-green/20">
+                    <p className="text-xs text-ml-green font-medium">✓ IDs match — Idempotency working!</p>
                   </div>
                 )}
               </div>
             ) : (
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
-                <p className="text-sm text-gray-500">Click "Submit Again" to test idempotency</p>
+              <div className="bg-gray-50 border border-ml-border rounded-lg p-4 text-center">
+                <p className="text-sm text-ml-text-muted">Submit again to test idempotency</p>
               </div>
             )}
           </div>

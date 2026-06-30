@@ -36,41 +36,45 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Acabou o Mony</h1>
+    <div className="min-h-screen bg-ml-bg">
+      <header className="bg-ml-blue shadow-sm">
+        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+          <h1 className="text-xl font-bold text-white tracking-tight">
+            Acabou o Mony
+          </h1>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">Merchant: {merchantId}</span>
+            <span className="text-sm text-white/80">
+              {merchantId}
+            </span>
             <button
               onClick={logout}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              className="px-4 py-1.5 bg-white/15 text-white text-sm rounded-md hover:bg-white/25 transition-colors"
             >
-              Logout
+              Sair
             </button>
           </div>
         </div>
       </header>
 
-      <nav className="bg-white border-b border-gray-200">
+      <nav className="bg-ml-surface border-b border-ml-border">
         <div className="container mx-auto px-4">
           <div className="flex space-x-8">
             <button
               onClick={() => setActiveTab('payment')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'payment'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-ml-yellow text-ml-text-primary'
+                  : 'border-transparent text-ml-text-muted hover:text-ml-text-secondary'
               }`}
             >
               Create Payment
             </button>
             <button
               onClick={() => setActiveTab('transactions')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'transactions' || activeTab === 'details'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-ml-yellow text-ml-text-primary'
+                  : 'border-transparent text-ml-text-muted hover:text-ml-text-secondary'
               }`}
             >
               Transactions
@@ -79,7 +83,7 @@ function App() {
         </div>
       </nav>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-6">
         {activeTab === 'payment' && <PaymentForm />}
         {activeTab === 'transactions' && (
           <TransactionList onSelectTransaction={handleSelectTransaction} />

@@ -33,15 +33,15 @@ export function TransactionDetails({ transactionId, onBack }: TransactionDetails
   const getStatusColor = (status: PaymentStatus) => {
     switch (status) {
       case 'COMPLETED':
-        return 'bg-green-100 text-green-800';
+        return 'bg-ml-green/10 text-ml-green';
       case 'DECLINED':
       case 'FAILED':
-        return 'bg-red-100 text-red-800';
+        return 'bg-ml-red/10 text-ml-red';
       case 'PROCESSING':
       case 'CHALLENGE_PENDING':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-ml-orange/10 text-ml-orange';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-ml-text-secondary';
     }
   };
 
@@ -56,7 +56,7 @@ export function TransactionDetails({ transactionId, onBack }: TransactionDetails
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-gray-600">Loading transaction...</div>
+        <div className="text-ml-text-secondary">Loading transaction...</div>
       </div>
     );
   }
@@ -66,16 +66,16 @@ export function TransactionDetails({ transactionId, onBack }: TransactionDetails
       <div className="max-w-2xl mx-auto">
         <button
           onClick={onBack}
-          className="mb-4 text-blue-600 hover:text-blue-800"
+          className="mb-4 text-ml-blue hover:text-ml-blue-dark transition-colors"
         >
           ← Back to List
         </button>
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <h3 className="text-lg font-bold text-red-900 mb-2">Error</h3>
-          <p className="text-sm text-red-700">{error}</p>
+        <div className="bg-red-50 border border-ml-red/20 rounded-lg p-6">
+          <h3 className="text-lg font-bold text-ml-red mb-2">Error</h3>
+          <p className="text-sm text-ml-red/80">{error}</p>
           <button
             onClick={fetchTransaction}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+            className="mt-4 px-4 py-2 bg-ml-red text-white rounded-md text-sm hover:brightness-110 transition-all"
           >
             Retry
           </button>
@@ -89,12 +89,12 @@ export function TransactionDetails({ transactionId, onBack }: TransactionDetails
       <div className="max-w-2xl mx-auto">
         <button
           onClick={onBack}
-          className="mb-4 text-blue-600 hover:text-blue-800"
+          className="mb-4 text-ml-blue hover:text-ml-blue-dark transition-colors"
         >
           ← Back to List
         </button>
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-          <p className="text-gray-600">Transaction not found</p>
+        <div className="bg-gray-50 border border-ml-border rounded-lg p-6">
+          <p className="text-ml-text-secondary">Transaction not found</p>
         </div>
       </div>
     );
@@ -105,90 +105,86 @@ export function TransactionDetails({ transactionId, onBack }: TransactionDetails
       <div className="flex justify-between items-center mb-6">
         <button
           onClick={onBack}
-          className="text-blue-600 hover:text-blue-800"
+          className="text-ml-blue hover:text-ml-blue-dark transition-colors"
         >
           ← Back to List
         </button>
         <button
           onClick={fetchTransaction}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          className="px-4 py-2 bg-ml-blue text-white rounded-md text-sm hover:bg-ml-blue-dark transition-colors"
         >
           Refresh Status
         </button>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">
+      <div className="bg-ml-surface rounded-lg shadow-sm p-6">
+        <h2 className="text-xl font-bold text-ml-text-primary mb-6">
           Transaction Details
         </h2>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">
+            <label className="block text-xs font-medium text-ml-text-muted uppercase tracking-wider mb-1">
               Transaction ID
             </label>
-            <code className="block text-sm bg-gray-100 px-3 py-2 rounded font-mono">
+            <code className="block text-sm bg-gray-50 border border-ml-border px-3 py-2 rounded font-mono text-ml-text-primary">
               {transaction.id}
             </code>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">
+            <label className="block text-xs font-medium text-ml-text-muted uppercase tracking-wider mb-1">
               Status
             </label>
-            <span
-              className={`inline-block px-3 py-1 text-sm font-medium rounded ${getStatusColor(
-                transaction.status
-              )}`}
-            >
+            <span className={`inline-block px-3 py-1 text-sm font-medium rounded ${getStatusColor(transaction.status)}`}>
               {transaction.status}
             </span>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-500 mb-1">
+              <label className="block text-xs font-medium text-ml-text-muted uppercase tracking-wider mb-1">
                 Amount
               </label>
-              <p className="text-lg font-semibold text-gray-900">
+              <p className="text-lg font-semibold text-ml-text-primary">
                 {formatAmount(transaction.amount, transaction.currency)}
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-500 mb-1">
+              <label className="block text-xs font-medium text-ml-text-muted uppercase tracking-wider mb-1">
                 Currency
               </label>
-              <p className="text-lg font-semibold text-gray-900">
+              <p className="text-lg font-semibold text-ml-text-primary">
                 {transaction.currency}
               </p>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">
+            <label className="block text-xs font-medium text-ml-text-muted uppercase tracking-wider mb-1">
               Merchant ID
             </label>
-            <code className="block text-sm bg-gray-100 px-3 py-2 rounded font-mono">
+            <code className="block text-sm bg-gray-50 border border-ml-border px-3 py-2 rounded font-mono text-ml-text-primary">
               {transaction.merchant_id}
             </code>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">
+            <label className="block text-xs font-medium text-ml-text-muted uppercase tracking-wider mb-1">
               Masked Card
             </label>
-            <p className="text-sm text-gray-900 font-mono">
+            <p className="text-sm text-ml-text-primary font-mono">
               {transaction.masked_card}
             </p>
           </div>
 
           {transaction.acquirer_reference && (
             <div>
-              <label className="block text-sm font-medium text-gray-500 mb-1">
-                Acquirer Reference (Mercado Pago ID)
+              <label className="block text-xs font-medium text-ml-text-muted uppercase tracking-wider mb-1">
+                Acquirer Reference
               </label>
-              <code className="block text-sm bg-gray-100 px-3 py-2 rounded font-mono">
+              <code className="block text-sm bg-gray-50 border border-ml-border px-3 py-2 rounded font-mono text-ml-text-primary">
                 {transaction.acquirer_reference}
               </code>
             </div>
@@ -196,10 +192,10 @@ export function TransactionDetails({ transactionId, onBack }: TransactionDetails
 
           {transaction.challenge_id && (
             <div>
-              <label className="block text-sm font-medium text-gray-500 mb-1">
+              <label className="block text-xs font-medium text-ml-text-muted uppercase tracking-wider mb-1">
                 3DS Challenge ID
               </label>
-              <code className="block text-sm bg-yellow-100 px-3 py-2 rounded font-mono">
+              <code className="block text-sm bg-ml-orange/5 border border-ml-orange/20 px-3 py-2 rounded font-mono text-ml-orange">
                 {transaction.challenge_id}
               </code>
             </div>
@@ -207,19 +203,19 @@ export function TransactionDetails({ transactionId, onBack }: TransactionDetails
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-500 mb-1">
+              <label className="block text-xs font-medium text-ml-text-muted uppercase tracking-wider mb-1">
                 Created At
               </label>
-              <p className="text-sm text-gray-900">
+              <p className="text-sm text-ml-text-primary">
                 {formatDate(transaction.created_at)}
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-500 mb-1">
+              <label className="block text-xs font-medium text-ml-text-muted uppercase tracking-wider mb-1">
                 Updated At
               </label>
-              <p className="text-sm text-gray-900">
+              <p className="text-sm text-ml-text-primary">
                 {formatDate(transaction.updated_at)}
               </p>
             </div>
