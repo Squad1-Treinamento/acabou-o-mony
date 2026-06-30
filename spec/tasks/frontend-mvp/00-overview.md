@@ -22,8 +22,8 @@ Build a **single-page application** with mock login and 5 functional screens (ta
 ### Core Features (10-14 hours)
 - [x] `02-auth-context.md` - Mock authentication context
 - [x] `03-api-client.md` - Axios client with auth headers
-- [ ] `04-login-screen.md` - Mock login form
-- [ ] `05-payment-form.md` - Payment processing screen
+- [x] `04-login-screen.md` - Mock login form
+- [x] `05-payment-form.md` - Payment processing screen
 - [ ] `06-transaction-list.md` - Transaction list screen
 - [ ] `07-transaction-details.md` - Transaction details screen
 - [ ] `08-idempotency-test.md` - Idempotency testing screen
@@ -32,8 +32,8 @@ Build a **single-page application** with mock login and 5 functional screens (ta
 
 ## Success Criteria
 
-- [ ] Mock login works (stores credentials)
-- [ ] Payment form submits to backend
+- [x] Mock login works (stores credentials)
+- [x] Payment form submits to backend
 - [ ] Transaction list fetches data
 - [ ] Transaction details shows single transaction
 - [ ] Idempotency test shows duplicate detection

@@ -1,48 +1,7 @@
-# Task 05: Payment Form
-
-**Status**: ✅ Completed  
-**Estimated Time**: 2.5 hours
-
-## Goal
-
-Create payment processing form with idempotency key generation and 3DS support.
-
-## Acceptance Criteria
-
-- [x] Form with all payment fields
-- [x] Auto-generate idempotency key
-- [x] Submit payment to backend API
-- [x] Display response (success or error)
-- [x] Handle 3DS challenge flow
-- [x] Show loading state during submission
-
-## Implementation Steps
-
-### 1. Create UUID Generator Utility
-
-**`src/utils/uuid.ts`**:
-```typescript
-export function generateUUID(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-}
-
-export function generateIdempotencyKey(): string {
-  return `req_${generateUUID()}`;
-}
-```
-
-### 2. Create PaymentForm Component
-
-**`src/components/PaymentForm.tsx`**:
-```typescript
 import { useState, FormEvent, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../services/api';
-import { PaymentRequest, PaymentResponse, ApiError } from '../types/payment';
+import type { PaymentResponse, ApiError } from '../types/payment';
 import { generateIdempotencyKey } from '../utils/uuid';
 
 export function PaymentForm() {
@@ -51,6 +10,7 @@ export function PaymentForm() {
   const [currency, setCurrency] = useState('BRL');
   const [cardToken, setCardToken] = useState('tok_visa_approved');
   const [customerId, setCustomerId] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [idempotencyKey, setIdempotencyKey] = useState('');
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<PaymentResponse | null>(null);
@@ -68,17 +28,17 @@ export function PaymentForm() {
     setResponse(null);
     setError(null);
 
-    const request: PaymentRequest = {
-      merchant_id: merchantId,
-      amount: parseInt(amount),
-      currency,
-      card_token: cardToken,
-      customer_id: customerId || undefined,
-      idempotency_key: idempotencyKey,
-    };
-
     try {
-      const result = await apiClient.createPayment(request);
+      const result = await apiClient.createPayment({
+        amount: parseInt(amount),
+        currency,
+        payment_method: {
+          card_token_id: cardToken,
+        },
+        customer_id: customerId || undefined,
+        customer_email: customerEmail || undefined,
+        idempotency_key: idempotencyKey,
+      });
       setResponse(result);
     } catch (err) {
       setError(err as ApiError);
@@ -168,6 +128,19 @@ export function PaymentForm() {
 
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
+            Customer Email (optional)
+          </label>
+          <input
+            type="email"
+            value={customerEmail}
+            onChange={(e) => setCustomerEmail(e.target.value)}
+            placeholder="customer@example.com"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          />
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             Idempotency Key
           </label>
           <div className="flex gap-2">
@@ -200,7 +173,6 @@ export function PaymentForm() {
         </button>
       </form>
 
-      {/* Success Response */}
       {response && (
         <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-6">
           <h3 className="text-lg font-bold text-green-900 mb-4">
@@ -242,7 +214,6 @@ export function PaymentForm() {
         </div>
       )}
 
-      {/* Error Response */}
       {error && (
         <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-6">
           <h3 className="text-lg font-bold text-red-900 mb-2">
@@ -255,96 +226,3 @@ export function PaymentForm() {
     </div>
   );
 }
-```
-
-### 3. Update App.tsx to Include PaymentForm
-
-**`src/App.tsx`**:
-```typescript
-import { useAuth } from './context/AuthContext';
-import { LoginForm } from './components/LoginForm';
-import { PaymentForm } from './components/PaymentForm';
-import { apiClient } from './services/api';
-import { useEffect } from 'react';
-
-function App() {
-  const { isAuthenticated, apiKey, merchantId, logout } = useAuth();
-
-  useEffect(() => {
-    if (apiKey) {
-      apiClient.setApiKey(apiKey);
-    } else {
-      apiClient.clearApiKey();
-    }
-  }, [apiKey]);
-
-  if (!isAuthenticated) {
-    return <LoginForm />;
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Acabou o Mony
-          </h1>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">
-              Merchant: {merchantId}
-            </span>
-            <button
-              onClick={logout}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8">
-        <PaymentForm />
-      </main>
-    </div>
-  );
-}
-
-export default App;
-```
-
-## Validation
-
-```bash
-# Type checking
-npm run type-check
-
-# Start backend
-# Make sure backend is running on http://localhost:8080
-
-# Start dev server
-npm run dev
-
-# Manual testing:
-# 1. Login with test credentials
-# 2. Should show payment form
-# 3. Fill in amount, card token
-# 4. Click "Submit Payment"
-# 5. Should show success response with transaction ID
-# 6. Try with different card tokens (tok_visa_declined, etc.)
-# 7. Click "New Key" to generate new idempotency key
-# 8. Submit again with same key - should get duplicate detection
-```
-
-## Files Created
-
-- `src/utils/uuid.ts`
-- `src/components/PaymentForm.tsx`
-
-## Files Modified
-
-- `src/App.tsx` (added header and PaymentForm)
-
-## Next Task
-
-`06-transaction-list.md` - Create transaction list screen
