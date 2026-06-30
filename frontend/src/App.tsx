@@ -2,15 +2,16 @@ import { useAuth } from './context/AuthContext';
 import { LoginForm } from './components/LoginForm';
 import { PaymentForm } from './components/PaymentForm';
 import { TransactionList } from './components/TransactionList';
+import { TransactionDetails } from './components/TransactionDetails';
 import { apiClient } from './services/api';
 import { useEffect, useState } from 'react';
 
-type Tab = 'payment' | 'transactions';
+type Tab = 'payment' | 'transactions' | 'details';
 
 function App() {
   const { isAuthenticated, apiKey, merchantId, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>('payment');
-  const [_selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
+  const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
 
   useEffect(() => {
     if (apiKey) {
@@ -26,7 +27,12 @@ function App() {
 
   const handleSelectTransaction = (transactionId: string) => {
     setSelectedTransactionId(transactionId);
-    alert(`Selected transaction: ${transactionId}`);
+    setActiveTab('details');
+  };
+
+  const handleBackToList = () => {
+    setSelectedTransactionId(null);
+    setActiveTab('transactions');
   };
 
   return (
@@ -62,7 +68,7 @@ function App() {
             <button
               onClick={() => setActiveTab('transactions')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'transactions'
+                activeTab === 'transactions' || activeTab === 'details'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
@@ -77,6 +83,12 @@ function App() {
         {activeTab === 'payment' && <PaymentForm />}
         {activeTab === 'transactions' && (
           <TransactionList onSelectTransaction={handleSelectTransaction} />
+        )}
+        {activeTab === 'details' && selectedTransactionId && (
+          <TransactionDetails
+            transactionId={selectedTransactionId}
+            onBack={handleBackToList}
+          />
         )}
       </main>
     </div>

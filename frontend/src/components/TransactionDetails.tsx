@@ -1,30 +1,6 @@
-# Task 07: Transaction Details
-
-**Status**: ✅ Completed  
-**Estimated Time**: 1.5 hours
-
-## Goal
-
-Create transaction details screen with full transaction information.
-
-## Acceptance Criteria
-
-- [x] Fetch and display single transaction by ID
-- [x] Show all transaction fields
-- [x] "Back to List" button
-- [x] "Refresh Status" button
-- [x] Handle loading and error states
-- [x] Handle 404 (transaction not found)
-
-## Implementation Steps
-
-### 1. Create TransactionDetails Component
-
-**`src/components/TransactionDetails.tsx`**:
-```typescript
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../services/api';
-import { TransactionDetails as Transaction, PaymentStatus } from '../types/payment';
+import type { TransactionDetails as Transaction, PaymentStatus } from '../types/payment';
 
 interface TransactionDetailsProps {
   transactionId: string;
@@ -36,23 +12,23 @@ export function TransactionDetails({ transactionId, onBack }: TransactionDetails
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchTransaction();
-  }, [transactionId]);
-
-  const fetchTransaction = async () => {
+  const fetchTransaction = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
       const data = await apiClient.getTransaction(transactionId);
       setTransaction(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load transaction');
     } finally {
       setLoading(false);
     }
-  };
+  }, [transactionId]);
+
+  useEffect(() => {
+    fetchTransaction();
+  }, [fetchTransaction]);
 
   const getStatusColor = (status: PaymentStatus) => {
     switch (status) {
@@ -253,144 +229,3 @@ export function TransactionDetails({ transactionId, onBack }: TransactionDetails
     </div>
   );
 }
-```
-
-### 2. Update App.tsx to Include TransactionDetails
-
-**`src/App.tsx`**:
-```typescript
-import { useAuth } from './context/AuthContext';
-import { LoginForm } from './components/LoginForm';
-import { PaymentForm } from './components/PaymentForm';
-import { TransactionList } from './components/TransactionList';
-import { TransactionDetails } from './components/TransactionDetails';
-import { apiClient } from './services/api';
-import { useEffect, useState } from 'react';
-
-type Tab = 'payment' | 'transactions' | 'details';
-
-function App() {
-  const { isAuthenticated, apiKey, merchantId, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<Tab>('payment');
-  const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (apiKey) {
-      apiClient.setApiKey(apiKey);
-    } else {
-      apiClient.clearApiKey();
-    }
-  }, [apiKey]);
-
-  if (!isAuthenticated) {
-    return <LoginForm />;
-  }
-
-  const handleSelectTransaction = (transactionId: string) => {
-    setSelectedTransactionId(transactionId);
-    setActiveTab('details');
-  };
-
-  const handleBackToList = () => {
-    setSelectedTransactionId(null);
-    setActiveTab('transactions');
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Acabou o Mony</h1>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">Merchant: {merchantId}</span>
-            <button
-              onClick={logout}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <nav className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4">
-          <div className="flex space-x-8">
-            <button
-              onClick={() => setActiveTab('payment')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'payment'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Create Payment
-            </button>
-            <button
-              onClick={() => setActiveTab('transactions')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'transactions' || activeTab === 'details'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Transactions
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      <main className="container mx-auto px-4 py-8">
-        {activeTab === 'payment' && <PaymentForm />}
-        {activeTab === 'transactions' && (
-          <TransactionList onSelectTransaction={handleSelectTransaction} />
-        )}
-        {activeTab === 'details' && selectedTransactionId && (
-          <TransactionDetails
-            transactionId={selectedTransactionId}
-            onBack={handleBackToList}
-          />
-        )}
-      </main>
-    </div>
-  );
-}
-
-export default App;
-```
-
-## Validation
-
-```bash
-# Type checking
-npm run type-check
-
-# Start backend
-# Make sure backend is running
-
-# Start dev server
-npm run dev
-
-# Manual testing:
-# 1. Login
-# 2. Go to "Transactions" tab
-# 3. Click on a transaction
-# 4. Should show transaction details
-# 5. Verify all fields are displayed
-# 6. Click "Refresh Status" button
-# 7. Should reload transaction data
-# 8. Click "Back to List"
-# 9. Should return to transaction list
-```
-
-## Files Created
-
-- `src/components/TransactionDetails.tsx`
-
-## Files Modified
-
-- `src/App.tsx` (added details view logic)
-
-## Next Task
-
-`08-idempotency-test.md` - Create idempotency testing screen

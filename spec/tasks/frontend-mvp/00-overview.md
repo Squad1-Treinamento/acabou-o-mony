@@ -25,7 +25,7 @@ Build a **single-page application** with mock login and 5 functional screens (ta
 - [x] `04-login-screen.md` - Mock login form
 - [x] `05-payment-form.md` - Payment processing screen
 - [x] `06-transaction-list.md` - Transaction list screen
-- [ ] `07-transaction-details.md` - Transaction details screen
+- [x] `07-transaction-details.md` - Transaction details screen
 - [ ] `08-idempotency-test.md` - Idempotency testing screen
 
 ## Total: 12-16 hours
