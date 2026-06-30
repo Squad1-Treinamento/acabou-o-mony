@@ -82,9 +82,9 @@ export default function Home() {
               <span className="text-sm font-semibold tracking-tight text-white/90">Acabou o Mony</span>
             </Link>
           <nav className="flex items-center gap-6">
-            <Link href="/store" className="text-xs text-white/55 hover:text-white transition-colors">Demo</Link>
+            <Link href="/store" className="text-xs text-white/55 hover:text-white transition-colors">Simulação</Link>
             <Link href="/login" className="text-xs font-medium px-4 py-1.5 rounded-lg transition-colors hover:bg-white/15" style={{ background: "rgba(255,255,255,0.10)", color: "rgba(255,255,255,0.85)" }}>
-              Merchant
+              Entrar
             </Link>
           </nav>
         </div>
@@ -299,20 +299,12 @@ export default function Home() {
         <div className="relative max-w-2xl mx-auto px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white/95 tracking-tight mb-4">Pronto para testar?</h2>
           <p className="text-white/40 text-sm mb-8">
-            Use a chave{" "}
-            <span className="font-mono text-white/70 bg-white/10 px-1.5 py-0.5 rounded">teste_key</span>
-            {" "}no painel ou simule uma compra na loja demo — sem cartão real necessário.
+            Simule uma compra na loja demo e veja o fluxo completo — 3DS, aprovação e confirmação — sem cartão real necessário.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/store" className="inline-flex items-center justify-center gap-2 h-12 px-8 rounded-xl font-semibold text-sm transition-all hover:opacity-90 hover:scale-[1.02]" style={{ background: "#4ADE80", color: "#0D2B1E" }}>
-              <CreditCard className="w-4 h-4" />
-              Simular uma compra
-            </Link>
-            <Link href="/login" className="inline-flex items-center justify-center gap-2 h-12 px-8 rounded-xl font-semibold text-sm transition-all hover:bg-white/10" style={{ border: "1px solid rgba(255,255,255,0.18)", color: "rgba(255,255,255,0.85)" }}>
-              <BarChart3 className="w-4 h-4" />
-              Acessar o painel
-            </Link>
-          </div>
+          <Link href="/store" className="inline-flex items-center justify-center gap-2 h-12 px-8 rounded-xl font-semibold text-sm transition-all hover:opacity-90 hover:scale-[1.02]" style={{ background: "#4ADE80", color: "#0D2B1E" }}>
+            <CreditCard className="w-4 h-4" />
+            Simular uma compra
+          </Link>
         </div>
       </section>
 
@@ -334,8 +326,8 @@ export default function Home() {
             </div>
           </div>
           <div className="flex items-center gap-6">
-            <Link href="/store" className="text-xs text-slate-400 hover:text-slate-700 transition-colors">Demo</Link>
-            <Link href="/login" className="text-xs text-slate-400 hover:text-slate-700 transition-colors">Merchant</Link>
+            <Link href="/store" className="text-xs text-slate-400 hover:text-slate-700 transition-colors">Simulação</Link>
+            <Link href="/login" className="text-xs text-slate-400 hover:text-slate-700 transition-colors">Entrar</Link>
             <span className="text-xs text-slate-300">PCI DSS · TLS 1.3 · © 2026</span>
           </div>
         </div>
