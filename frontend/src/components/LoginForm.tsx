@@ -22,30 +22,12 @@ export function LoginForm() {
           </p>
         </div>
 
-        <button
+                <button
           onClick={handleLogin}
-          className="nu-btn-primary mb-6"
+          className="nu-btn-primary"
         >
           Enter Admin Dashboard
         </button>
-
-        <div className="p-4 bg-nu-purple-light rounded-xl text-left">
-          <p className="text-sm font-semibold text-nu-purple mb-2">
-            Using credentials
-          </p>
-          <p className="text-xs text-nu-purple/70">
-            Merchant ID:{' '}
-            <code className="bg-white/50 px-1.5 py-0.5 rounded text-nu-purple font-mono">
-              {ADMIN_MERCHANT_ID}
-            </code>
-          </p>
-          <p className="text-xs text-nu-purple/70 mt-1">
-            API Key:{' '}
-            <code className="bg-white/50 px-1.5 py-0.5 rounded text-nu-purple font-mono">
-              {ADMIN_API_KEY}
-            </code>
-          </p>
-        </div>
       </div>
     </div>
   );

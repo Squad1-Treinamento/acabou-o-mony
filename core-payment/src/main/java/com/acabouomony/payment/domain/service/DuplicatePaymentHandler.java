@@ -129,15 +129,19 @@ public class DuplicatePaymentHandler {
      * @param transaction The existing transaction
      * @return ResponseEntity with appropriate status and response body
      */
-    public ResponseEntity<PaymentResponseDTO> buildDuplicateResponse(Transaction transaction) {
+        public ResponseEntity<PaymentResponseDTO> buildDuplicateResponse(Transaction transaction) {
         PaymentStatus status = transaction.getStatus();
         
         PaymentResponseDTO response = PaymentResponseDTO.builder()
             .transactionId(transaction.getId())
+            .merchantId(transaction.getMerchantId())
             .status(status)
             .amount(transaction.getAmount())
             .currency(transaction.getCurrency())
             .maskedCard(transaction.getMaskedCard())
+            .idempotencyKey(transaction.getIdempotencyKey())
+            .challengeId(transaction.getChallengeId())
+            .acsUrl(transaction.getChallengeAcsUrl())
             .createdAt(transaction.getCreatedAt())
             .updatedAt(transaction.getUpdatedAt())
             .build();
@@ -183,16 +187,19 @@ public class DuplicatePaymentHandler {
      * @param transaction The newly created transaction
      * @return ResponseEntity with appropriate status and response body
      */
-    public ResponseEntity<PaymentResponseDTO> buildNewPaymentResponse(Transaction transaction) {
+        public ResponseEntity<PaymentResponseDTO> buildNewPaymentResponse(Transaction transaction) {
         PaymentStatus status = transaction.getStatus();
         
         PaymentResponseDTO response = PaymentResponseDTO.builder()
             .transactionId(transaction.getId())
+            .merchantId(transaction.getMerchantId())
             .status(status)
             .amount(transaction.getAmount())
             .currency(transaction.getCurrency())
             .maskedCard(transaction.getMaskedCard())
             .idempotencyKey(transaction.getIdempotencyKey())
+            .challengeId(transaction.getChallengeId())
+            .acsUrl(transaction.getChallengeAcsUrl())
             .createdAt(transaction.getCreatedAt())
             .updatedAt(transaction.getUpdatedAt())
             .build();

@@ -108,11 +108,17 @@ public class PaymentController {
         logger.info("Payment request received: amount={}, currency={}, idempotency_key={}",
             request.getAmount(), request.getCurrency(), request.getIdempotencyKey());
         
-        try {
-            // Step 0: Authenticate merchant
-            // TODO: Implement merchant authentication (Task-004)
-            // For now, use a placeholder merchant ID
-            UUID merchantId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+                try {
+            // Step 0: Extract authenticated merchant ID from SecurityContext
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            
+            if (authentication == null || authentication.getPrincipal() == null) {
+                logger.error("No authentication found in SecurityContext");
+                return ResponseEntity.status(401).build();
+            }
+            
+            String merchantIdStr = authentication.getPrincipal().toString();
+            UUID merchantId = UUID.fromString(merchantIdStr);
             logger.debug("Merchant authenticated: {}", merchantId);
             
             // Step 1: Check response cache (fast-path)
@@ -207,17 +213,20 @@ public class PaymentController {
                 orchestrationService.processPayment(saved);
                 logger.info("Orchestration complete: id={}, status={}", saved.getId(), saved.getStatus());
 
-                // Build response for new transaction
+                                // Build response for new transaction
                 ResponseEntity<PaymentResponseDTO> response;
                 if (saved.getStatus() == PaymentStatus.CHALLENGE_PENDING) {
                     PaymentResponseDTO dto = PaymentResponseDTO.builder()
                             .transactionId(saved.getId())
+                            .merchantId(saved.getMerchantId())
                             .status(saved.getStatus())
                             .amount(saved.getAmount())
                             .currency(saved.getCurrency())
                             .createdAt(saved.getCreatedAt())
                             .updatedAt(saved.getUpdatedAt())
                             .idempotencyKey(saved.getIdempotencyKey())
+                            .challengeId(saved.getChallengeId())
+                            .acsUrl(saved.getChallengeAcsUrl())
                             .build();
                     response = ResponseEntity.accepted().body(dto);
                 } else {
